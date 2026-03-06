@@ -37,7 +37,14 @@ class DymoPrinter:
             DymoPrinter._win_print(pdf_path, printer_name)
         else:
             # macOS / Linux — CUPS
-            subprocess.run(["lp", "-d", printer_name, pdf_path], check=True)
+            # Specify label dimensions and landscape so CUPS does not rotate.
+            subprocess.run([
+                "lp", "-d", printer_name,
+                "-o", "media=Custom.36x89mm",      # portrait feed: 36 mm wide × 89 mm long
+                "-o", "orientation-requested=4",   # 4 = landscape → CUPS rotates PDF 90° to fit
+                "-o", "fit-to-page",
+                pdf_path,
+            ], check=True)
 
     @staticmethod
     def _win_print(pdf_path: str, printer_name: str) -> None:

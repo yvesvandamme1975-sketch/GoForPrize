@@ -46,14 +46,44 @@ class PdfGenerator:
         c.setFillColor(colors.black)          # all text is black — layout is pre-printed
 
         # ── Article name ── just below the header line, centred ──────
-        max_w = page_w - 2 * margin
-        font_size = 38                        # 32 × 1.2
-        while (stringWidth(article, "Helvetica-Bold", font_size) > max_w
-               and font_size > 17):          # 14 × 1.2
-            font_size -= 1
-        c.setFont("Helvetica-Bold", font_size)
-        art_y = safe_top - 2 * mm             # +10 mm (1 cm up)
-        c.drawCentredString(page_w / 2, art_y, article)
+        max_w     = page_w - 2 * margin
+        font_size = 48                        # 46 × 1.05
+        line_gap  = font_size * 1.2           # leading
+
+        if stringWidth(article, "Helvetica-Bold", font_size) <= max_w:
+            # Single line fits
+            c.setFont("Helvetica-Bold", font_size)
+            c.drawCentredString(page_w / 2, safe_top - 2 * mm, article)
+        else:
+            # Try to wrap into 2 lines at target font; shrink if needed
+            while font_size > 20:
+                words  = article.split()
+                line1  = ""
+                for word in words:
+                    test = (line1 + " " + word).strip()
+                    if stringWidth(test, "Helvetica-Bold", font_size) <= max_w:
+                        line1 = test
+                    else:
+                        break
+                line2 = article[len(line1):].strip()
+                if (line1 and
+                        stringWidth(line1, "Helvetica-Bold", font_size) <= max_w and
+                        stringWidth(line2, "Helvetica-Bold", font_size) <= max_w):
+                    break
+                font_size -= 1
+            line_gap = font_size * 1.2
+            words  = article.split()
+            line1  = ""
+            for word in words:
+                test = (line1 + " " + word).strip()
+                if stringWidth(test, "Helvetica-Bold", font_size) <= max_w:
+                    line1 = test
+                else:
+                    break
+            line2 = article[len(line1):].strip()
+            c.setFont("Helvetica-Bold", font_size)
+            c.drawCentredString(page_w / 2, safe_top - 2 * mm,            line1)
+            c.drawCentredString(page_w / 2, safe_top - 2 * mm - line_gap, line2)
 
         # ── Price ── large, centred in the safe zone ──────────────────
         c.setFont("Helvetica-Bold", 96)      # 80 × 1.2
@@ -105,22 +135,6 @@ class PdfGenerator:
         f_price = round(f_title * RATIO)   # 21
 
         c = rl_canvas.Canvas(output_path, pagesize=(page_w, page_h))
-
-        # ── Logo (top-left, small) ──────────────────────────────────
-        logo_h_pt = 10 * mm
-        logo_w_pt = 15 * mm
-        if logo_path and os.path.exists(logo_path):
-            from PIL import Image
-            pil_img = Image.open(logo_path)
-            pil_img.thumbnail((120, 90), Image.LANCZOS)
-            buf = io.BytesIO()
-            pil_img.save(buf, format="PNG")
-            buf.seek(0)
-            c.drawImage(ImageReader(buf),
-                        page_w - margin - logo_w_pt,
-                        page_h - margin - logo_h_pt,
-                        width=logo_w_pt, height=logo_h_pt,
-                        preserveAspectRatio=True, mask="auto")
 
         # ── Article title — top-left, bold, up to 2 lines ──────────
         max_text_w = page_w - 2 * margin

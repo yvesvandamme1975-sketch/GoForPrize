@@ -35,4 +35,5 @@ class SettingsDialog(ctk.CTkToplevel):
         self._config.set("usb_printer", self._usb_var.get())
         self._config.set("label_size",   "89x36")
         self._config.save()
+        self.grab_release()
         self.destroy()

@@ -46,4 +46,5 @@ class MappingDialog(ctk.CTkToplevel):
             val = var.get()
             self._mapping[key] = None if val == "(ignoré)" else val
         self.result = self._mapping
+        self.grab_release()
         self.destroy()

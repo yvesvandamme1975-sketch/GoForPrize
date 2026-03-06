@@ -1,4 +1,4 @@
-import os, tempfile
+import os, sys, tempfile
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -40,6 +40,7 @@ class MainWindow:
         self._selected_row     = None   # highlighted row frame
         self._selected_hist_row = None  # highlighted history row frame
         self._table_rows       = []     # list of (frame, product, orig_bg)
+        self._check_vars       = []     # list of (BooleanVar, product) for batch selection
         self._suggestion_btns  = []
         self._search_after_id  = None
 
@@ -57,11 +58,22 @@ class MainWindow:
         self._root.drop_target_register(DND_FILES)
         self._root.dnd_bind("<<Drop>>", self._on_file_drop)
 
-        # macOS: prevent the window-activation click from being swallowed
-        if self._root.tk.call("tk", "windowingsystem") == "aqua":
-            self._root.tk.call("::tk::unsupported::MacWindowStyle",
-                               "style", self._root._w,
-                               "document", "closeBox collapseBox resizable")
+        # macOS: bring window to front so first click is not swallowed
+        if sys.platform == "darwin":
+            self._root.after(150, self._macos_activate)
+
+    def _macos_activate(self):
+        try:
+            import subprocess, os as _os
+            subprocess.Popen([
+                "osascript", "-e",
+                f"tell application \"System Events\" to set frontmost of "
+                f"first process whose unix id is {_os.getpid()} to true"
+            ])
+        except Exception:
+            pass
+        self._root.lift()
+        self._root.focus_force()
 
         last = self._config.get("last_excel_path")
         if last and os.path.exists(last):
@@ -182,6 +194,12 @@ class MainWindow:
         tk.Frame(parent, bg=BORDER, height=1).pack(fill="x", pady=(8, 0))
         hdr = tk.Frame(parent, bg="#F2F3F5")
         hdr.pack(fill="x")
+        self._select_all_var = tk.BooleanVar(value=False)
+        tk.Checkbutton(hdr, variable=self._select_all_var,
+                       command=self._toggle_select_all,
+                       bg="#F2F3F5", activebackground="#F2F3F5",
+                       relief="flat", bd=0,
+                       ).pack(side="left", padx=(4, 0))
         for text, width, anchor in [
             ("Article",  17, "w"),
             ("P/L",       5, "w"),
@@ -327,6 +345,26 @@ class MainWindow:
             corner_radius=8,
         ).pack(side="left")
 
+        # Batch action row (uses checkboxes in the article list)
+        batch_bar = tk.Frame(parent, bg=SURFACE)
+        batch_bar.pack(fill="x", padx=16, pady=(0, 14))
+        ctk.CTkButton(
+            batch_bar, text="☑  Étiquettes (sélection)",
+            command=self._batch_print_labels,
+            width=210, height=36,
+            font=ctk.CTkFont("Helvetica", 12),
+            fg_color=P, hover_color=P_DK,
+            corner_radius=8,
+        ).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(
+            batch_bar, text="☑  Imprimer A4 (sélection)",
+            command=self._batch_print_a4,
+            width=210, height=36,
+            font=ctk.CTkFont("Helvetica", 12),
+            fg_color=NAV2, hover_color="#3E5470",
+            corner_radius=8,
+        ).pack(side="left")
+
     def _set_format(self, fmt: str):
         self._format_var.set(fmt)
         if fmt == "label":
@@ -381,6 +419,7 @@ class MainWindow:
     def _ask_mapping(self, headers, current_mapping):
         dlg = MappingDialog(self._root, headers, current_mapping)
         self._root.wait_window(dlg)
+        self._root.focus_force()
         return dlg.result
 
     # ── Search ────────────────────────────────────────────────────────
@@ -431,6 +470,8 @@ class MainWindow:
         for w in self._table_frame.winfo_children():
             w.destroy()
         self._table_rows.clear()
+        self._check_vars.clear()
+        self._select_all_var.set(False)
         self._selected_row = None
         if not rows:
             tk.Label(self._table_frame, text="Aucun résultat.",
@@ -451,6 +492,12 @@ class MainWindow:
         bg  = SURFACE if idx % 2 == 0 else ROW_ALT
         fr  = tk.Frame(self._table_frame, bg=bg, cursor="hand2")
         fr.pack(fill="x")
+
+        var = tk.BooleanVar(value=False)
+        self._check_vars.append((var, row))
+        cb = tk.Checkbutton(fr, variable=var, bg=bg, activebackground=bg,
+                            relief="flat", bd=0)
+        cb.pack(side="left", padx=(4, 0))
 
         tk.Label(fr, text=row.get("article", ""),
                  width=17, anchor="w",
@@ -476,7 +523,8 @@ class MainWindow:
         fr._orig_bg = bg   # stored for O(1) deselect
         self._table_rows.append((fr, row, bg))
 
-        for w in [fr] + list(fr.winfo_children()):
+        for w in [fr] + [c for c in fr.winfo_children()
+                         if not isinstance(c, tk.Checkbutton)]:
             w.bind("<Button-1>",
                    lambda e, r=row, f=fr: self._select_product(r, f))
 
@@ -632,7 +680,7 @@ class MainWindow:
 
             m       = round(ah * 0.06)
             f_pro   = max(9,  round(ah * 0.065))
-            f_title = round(f_pro   * RATIO * 1.2)   # article +20%
+            f_title = round(f_pro   * RATIO * 1.44)   # article +20% +20%
             f_price = round(f_pro   * RATIO * RATIO * 1.2) # price +20%
 
             # Drop-shadow + fallback white card (visible if PDF bg fails to load)
@@ -827,8 +875,83 @@ class MainWindow:
         p = os.path.join(self._base_dir, "assets", "logo.png")
         return p if os.path.exists(p) else None
 
+    # ── Batch selection helpers ────────────────────────────────────────
+
+    def _toggle_select_all(self):
+        val = self._select_all_var.get()
+        for var, _ in self._check_vars:
+            var.set(val)
+
+    def _get_checked_products(self):
+        return [p for var, p in self._check_vars if var.get()]
+
+    def _batch_print_labels(self):
+        products = self._get_checked_products()
+        if not products:
+            messagebox.showwarning("Attention", "Cochez au moins un article.")
+            return
+        name = self._config.get("usb_printer")
+        if not name or name == "(aucune)":
+            available = [p for p in DymoPrinter.list_dymo_printers()
+                         if p and p != "(aucune)"]
+            if not available:
+                messagebox.showerror("Erreur",
+                    "Aucune imprimante trouvée.\n"
+                    "Vérifiez que l'imprimante est branchée et allumée.")
+                return
+            name = available[0]
+            self._config.set("usb_printer", name)
+            self._config.save()
+        size = self._config.get_label_size_info()
+        logo = self._logo_path()
+        errors = []
+        for product in products:
+            try:
+                tmp = os.path.join(tempfile.gettempdir(), "gofp_label_batch.pdf")
+                PdfGenerator.generate_label(
+                    product, tmp, logo,
+                    width_mm=size["width_mm"],
+                    height_mm=size["height_mm"])
+                DymoPrinter.print_label_pdf(tmp, printer_name=name)
+                self._history.add(product, fmt="label")
+            except Exception as e:
+                errors.append(f"{product.get('article', '?')}: {e}")
+        self._refresh_history()
+        if errors:
+            messagebox.showerror("Erreurs", "\n".join(errors))
+        else:
+            messagebox.showinfo("Succès",
+                f"{len(products)} étiquette(s) envoyée(s) à l'imprimante.")
+
+    def _batch_print_a4(self):
+        products = self._get_checked_products()
+        if not products:
+            messagebox.showwarning("Attention", "Cochez au moins un article.")
+            return
+        logo = self._logo_path()
+        try:
+            import fitz
+            merger = fitz.open()
+            for product in products:
+                tmp = os.path.join(tempfile.gettempdir(),
+                                   f"gofp_a4_{abs(hash(product.get('article','')))}.pdf")
+                PdfGenerator.generate_a4(product, tmp, logo)
+                src = fitz.open(tmp)
+                merger.insert_pdf(src)
+                src.close()
+                self._history.add(product, fmt="a4")
+            merged_path = os.path.join(tempfile.gettempdir(), "gofp_a4_batch.pdf")
+            merger.save(merged_path)
+            merger.close()
+            self._refresh_history()
+            DymoPrinter.open_pdf_and_print(merged_path)
+        except Exception as e:
+            messagebox.showerror("Erreur impression A4", str(e))
+
     def _open_settings(self):
-        SettingsDialog(self._root, self._config)
+        dlg = SettingsDialog(self._root, self._config)
+        self._root.wait_window(dlg)
+        self._root.focus_force()
 
     def run(self):
         self._root.mainloop()
