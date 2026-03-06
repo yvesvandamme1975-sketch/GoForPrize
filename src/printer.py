@@ -59,8 +59,9 @@ class DymoPrinter:
         if sys.platform == "darwin":
             subprocess.run(["open", pdf_path], check=True)
         elif sys.platform == "win32":
-            # "print" verb opens the file and sends it to the default printer
-            os.startfile(os.path.abspath(pdf_path), "print")
+            # Open in the default PDF viewer so the user sees the print dialog
+            # and can select the correct A4 printer (not the Dymo default).
+            os.startfile(os.path.abspath(pdf_path))
         else:
             subprocess.run(["xdg-open", pdf_path], check=True)
 

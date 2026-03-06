@@ -47,16 +47,16 @@ class PdfGenerator:
 
         # ── Article name ── just below the header line, centred ──────
         max_w = page_w - 2 * margin
-        font_size = 32
+        font_size = 42                        # 32 × 1.3
         while (stringWidth(article, "Helvetica-Bold", font_size) > max_w
-               and font_size > 14):
+               and font_size > 18):          # 14 × 1.3
             font_size -= 1
         c.setFont("Helvetica-Bold", font_size)
         art_y = safe_top - 12 * mm           # baseline: 12 mm below safe line
         c.drawCentredString(page_w / 2, art_y, article)
 
         # ── Price ── large, centred in the safe zone ──────────────────
-        c.setFont("Helvetica-Bold", 80)
+        c.setFont("Helvetica-Bold", 104)     # 80 × 1.3
         price_y = 55 * mm                     # 55 mm from bottom
         c.drawCentredString(page_w / 2, price_y, price_str)
 
@@ -71,8 +71,8 @@ class PdfGenerator:
             c.drawRightString(page_w - margin, margin + 14 * mm,
                               f"Origine : {origine}")
 
-        # ── Pro prices ── bottom-right, small ─────────────────────────
-        c.setFont("Helvetica", 6.5)
+        # ── Pro prices ── bottom-right, same size as Origine ─────────
+        c.setFont("Helvetica", 18)
         c.drawRightString(page_w - margin, margin,
                           f"PPHT {ppht_str}    PPTTC {ppttc_str}")
 

@@ -632,8 +632,8 @@ class MainWindow:
 
             m       = round(ah * 0.06)
             f_pro   = max(9,  round(ah * 0.065))
-            f_title = round(f_pro   * RATIO)
-            f_price = round(f_title * RATIO)
+            f_title = round(f_pro   * RATIO * 1.3)
+            f_price = round(f_title * RATIO * 1.3)
 
             # Drop-shadow + fallback white card (visible if PDF bg fails to load)
             c.create_rectangle(x0+3, y0+3, x0+DW+3, y0+ah+3,
@@ -682,8 +682,8 @@ class MainWindow:
                               text=f"Origine : {p.get('origine', '')}",
                               font=("Arial", f_pro), anchor="e", fill="black")
 
-            # PPHT / PPTTC — very bottom, right (50% smaller)
-            f_ppro = max(6, round(f_pro * 0.5))
+            # PPHT / PPTTC — very bottom, right (same size as Origine)
+            f_ppro = f_pro
             c.create_text(x0 + DW - m,
                           safe_top + round(safe_h * 0.93),
                           text=(f"PPHT {fp(p.get('ppro_htva', 0))}"
