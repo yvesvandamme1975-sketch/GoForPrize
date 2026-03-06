@@ -47,34 +47,34 @@ class PdfGenerator:
 
         # ── Article name ── just below the header line, centred ──────
         max_w = page_w - 2 * margin
-        font_size = 42                        # 32 × 1.3
+        font_size = 38                        # 32 × 1.2
         while (stringWidth(article, "Helvetica-Bold", font_size) > max_w
-               and font_size > 18):          # 14 × 1.3
+               and font_size > 17):          # 14 × 1.2
             font_size -= 1
         c.setFont("Helvetica-Bold", font_size)
-        art_y = safe_top - 12 * mm           # baseline: 12 mm below safe line
+        art_y = safe_top - 2 * mm             # +10 mm (1 cm up)
         c.drawCentredString(page_w / 2, art_y, article)
 
         # ── Price ── large, centred in the safe zone ──────────────────
-        c.setFont("Helvetica-Bold", 104)     # 80 × 1.3
-        price_y = 55 * mm                     # 55 mm from bottom
+        c.setFont("Helvetica-Bold", 96)      # 80 × 1.2
+        price_y = 65 * mm                     # +10 mm (1 cm up)
         c.drawCentredString(page_w / 2, price_y, price_str)
 
         # ── Price per litre ── bottom-left ───────────────────────────
         if p_l:
             c.setFont("Helvetica", 18)
-            c.drawString(margin, margin + 14 * mm, p_l)
+            c.drawString(margin, margin + 24 * mm, p_l)   # +10 mm
 
         # ── Origine ── bottom-right ───────────────────────────────────
         if origine:
             c.setFont("Helvetica", 18)
-            c.drawRightString(page_w - margin, margin + 14 * mm,
-                              f"Origine : {origine}")
+            c.drawRightString(page_w - margin, margin + 24 * mm,
+                              f"Origine : {origine}")      # +10 mm
 
         # ── Pro prices ── bottom-right, same size as Origine ─────────
         c.setFont("Helvetica", 18)
-        c.drawRightString(page_w - margin, margin,
-                          f"PPHT {ppht_str}    PPTTC {ppttc_str}")
+        c.drawRightString(page_w - margin, margin + 10 * mm,
+                          f"PPHT {ppht_str}    PPTTC {ppttc_str}")  # +10 mm
 
         c.save()
         return output_path

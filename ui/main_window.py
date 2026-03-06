@@ -632,8 +632,8 @@ class MainWindow:
 
             m       = round(ah * 0.06)
             f_pro   = max(9,  round(ah * 0.065))
-            f_title = round(f_pro   * RATIO * 1.3)
-            f_price = round(f_title * RATIO * 1.3)
+            f_title = round(f_pro   * RATIO * 1.2)   # article +20%
+            f_price = round(f_pro   * RATIO * RATIO * 1.2) # price +20%
 
             # Drop-shadow + fallback white card (visible if PDF bg fails to load)
             c.create_rectangle(x0+3, y0+3, x0+DW+3, y0+ah+3,
@@ -655,7 +655,7 @@ class MainWindow:
             # All text mirrors the PDF output: black only
             # Article — just below header line, centred
             c.create_text(x0 + DW // 2,
-                          safe_top + round(safe_h * 0.10),
+                          safe_top + round(safe_h * 0.02),
                           text=clean_article(p.get("article", "")),
                           font=("Arial", f_title, "bold"),
                           anchor="center", fill="black",
@@ -663,7 +663,7 @@ class MainWindow:
 
             # Price — centred in safe zone
             c.create_text(x0 + DW // 2,
-                          safe_top + round(safe_h * 0.54),
+                          safe_top + round(safe_h * 0.46),
                           text=f"{fp(p.get('pvente', 0))}€",
                           font=("Arial", f_price, "bold"),
                           anchor="center", fill="black")
@@ -671,21 +671,21 @@ class MainWindow:
             # Price per litre — bottom-left (value only, no label)
             if p.get("p_l"):
                 c.create_text(x0 + m,
-                              safe_top + round(safe_h * 0.80),
+                              safe_top + round(safe_h * 0.72),
                               text=p.get("p_l", ""),
                               font=("Arial", f_pro), anchor="w", fill="black")
 
             # Origine — bottom-right
             if p.get("origine"):
                 c.create_text(x0 + DW - m,
-                              safe_top + round(safe_h * 0.80),
+                              safe_top + round(safe_h * 0.72),
                               text=f"Origine : {p.get('origine', '')}",
                               font=("Arial", f_pro), anchor="e", fill="black")
 
             # PPHT / PPTTC — very bottom, right (same size as Origine)
             f_ppro = f_pro
             c.create_text(x0 + DW - m,
-                          safe_top + round(safe_h * 0.93),
+                          safe_top + round(safe_h * 0.85),
                           text=(f"PPHT {fp(p.get('ppro_htva', 0))}"
                                 f"   PPTTC {fp(p.get('ppro', 0))}"),
                           font=("Arial", f_ppro), anchor="e", fill="#444444")
