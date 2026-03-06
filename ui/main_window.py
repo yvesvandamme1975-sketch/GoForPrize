@@ -40,7 +40,9 @@ class MainWindow:
         self._selected_row     = None   # highlighted row frame
         self._selected_hist_row = None  # highlighted history row frame
         self._table_rows       = []     # list of (frame, product, orig_bg)
-        self._check_vars       = []     # list of (BooleanVar, product) for batch selection
+        self._check_vars       = []     # list of (BooleanVar, key) for visible rows
+        self._selected_keys    = set()  # persistent selection across searches
+        self._key_to_product   = {}     # key → product dict
         self._suggestion_btns  = []
         self._search_after_id  = None
 
@@ -363,6 +365,14 @@ class MainWindow:
             font=ctk.CTkFont("Helvetica", 12),
             fg_color=NAV2, hover_color="#3E5470",
             corner_radius=8,
+        ).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(
+            batch_bar, text="✕  Décocher tout",
+            command=self._unselect_all,
+            width=140, height=36,
+            font=ctk.CTkFont("Helvetica", 12),
+            fg_color="#888", hover_color="#666",
+            corner_radius=8,
         ).pack(side="left")
 
     def _set_format(self, fmt: str):
@@ -471,7 +481,6 @@ class MainWindow:
             w.destroy()
         self._table_rows.clear()
         self._check_vars.clear()
-        self._select_all_var.set(False)
         self._selected_row = None
         if not rows:
             tk.Label(self._table_frame, text="Aucun résultat.",
@@ -493,10 +502,13 @@ class MainWindow:
         fr  = tk.Frame(self._table_frame, bg=bg, cursor="hand2")
         fr.pack(fill="x")
 
-        var = tk.BooleanVar(value=False)
-        self._check_vars.append((var, row))
+        key = (row.get("article", ""), str(row.get("pvente", 0)))
+        self._key_to_product[key] = row
+        var = tk.BooleanVar(value=(key in self._selected_keys))
+        self._check_vars.append((var, key))
         cb = tk.Checkbutton(fr, variable=var, bg=bg, activebackground=bg,
-                            relief="flat", bd=0)
+                            relief="flat", bd=0,
+                            command=self._make_check_cmd(var, key))
         cb.pack(side="left", padx=(4, 0))
 
         tk.Label(fr, text=row.get("article", ""),
@@ -877,13 +889,37 @@ class MainWindow:
 
     # ── Batch selection helpers ────────────────────────────────────────
 
+    @staticmethod
+    def _row_key(row):
+        return (row.get("article", ""), str(row.get("pvente", 0)))
+
+    def _make_check_cmd(self, var, key):
+        def _cmd():
+            if var.get():
+                self._selected_keys.add(key)
+            else:
+                self._selected_keys.discard(key)
+        return _cmd
+
     def _toggle_select_all(self):
         val = self._select_all_var.get()
-        for var, _ in self._check_vars:
+        for var, key in self._check_vars:
             var.set(val)
+            if val:
+                self._selected_keys.add(key)
+            else:
+                self._selected_keys.discard(key)
+
+    def _unselect_all(self):
+        self._selected_keys.clear()
+        self._select_all_var.set(False)
+        for var, _ in self._check_vars:
+            var.set(False)
 
     def _get_checked_products(self):
-        return [p for var, p in self._check_vars if var.get()]
+        return [self._key_to_product[k]
+                for k in self._selected_keys
+                if k in self._key_to_product]
 
     def _batch_print_labels(self):
         products = self._get_checked_products()
