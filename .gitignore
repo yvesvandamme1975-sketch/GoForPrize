@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+
+# App runtime files
+history.json
+config.json
+
+# macOS
+.DS_Store
+
+# Temp files
+/tmp/
