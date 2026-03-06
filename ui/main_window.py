@@ -668,11 +668,11 @@ class MainWindow:
                           font=("Arial", f_price, "bold"),
                           anchor="center", fill="black")
 
-            # P/L — bottom-left
+            # Price per litre — bottom-left (value only, no label)
             if p.get("p_l"):
                 c.create_text(x0 + m,
                               safe_top + round(safe_h * 0.80),
-                              text=f"P/L : {p.get('p_l', '')}",
+                              text=p.get("p_l", ""),
                               font=("Arial", f_pro), anchor="w", fill="black")
 
             # Origine — bottom-right
@@ -682,12 +682,13 @@ class MainWindow:
                               text=f"Origine : {p.get('origine', '')}",
                               font=("Arial", f_pro), anchor="e", fill="black")
 
-            # PPHT / PPTTC — very bottom, right
+            # PPHT / PPTTC — very bottom, right (50% smaller)
+            f_ppro = max(6, round(f_pro * 0.5))
             c.create_text(x0 + DW - m,
                           safe_top + round(safe_h * 0.93),
                           text=(f"PPHT {fp(p.get('ppro_htva', 0))}"
                                 f"   PPTTC {fp(p.get('ppro', 0))}"),
-                          font=("Arial", f_pro), anchor="e", fill="#444444")
+                          font=("Arial", f_ppro), anchor="e", fill="#444444")
 
     # ── History ───────────────────────────────────────────────────────
 

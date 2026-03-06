@@ -60,10 +60,10 @@ class PdfGenerator:
         price_y = 55 * mm                     # 55 mm from bottom
         c.drawCentredString(page_w / 2, price_y, price_str)
 
-        # ── P/L ── bottom-left ────────────────────────────────────────
+        # ── Price per litre ── bottom-left ───────────────────────────
         if p_l:
             c.setFont("Helvetica", 18)
-            c.drawString(margin, margin + 14 * mm, f"P/L : {p_l}")
+            c.drawString(margin, margin + 14 * mm, p_l)
 
         # ── Origine ── bottom-right ───────────────────────────────────
         if origine:
@@ -72,7 +72,7 @@ class PdfGenerator:
                               f"Origine : {origine}")
 
         # ── Pro prices ── bottom-right, small ─────────────────────────
-        c.setFont("Helvetica", 13)
+        c.setFont("Helvetica", 6.5)
         c.drawRightString(page_w - margin, margin,
                           f"PPHT {ppht_str}    PPTTC {ppttc_str}")
 
