@@ -764,8 +764,17 @@ class MainWindow:
             return
         name = self._config.get("usb_printer")
         if not name or name == "(aucune)":
-            messagebox.showerror("Erreur", "Aucune imprimante USB sélectionnée.")
-            return
+            # Auto-detect: try to find an available printer
+            available = [p for p in DymoPrinter.list_dymo_printers()
+                         if p and p != "(aucune)"]
+            if not available:
+                messagebox.showerror("Erreur",
+                    "Aucune imprimante trouvée.\n"
+                    "Vérifiez que l'imprimante est branchée et allumée.")
+                return
+            name = available[0]
+            self._config.set("usb_printer", name)
+            self._config.save()
         size = self._config.get_label_size_info()
         logo = self._logo_path()
         tmp_path = os.path.join(tempfile.gettempdir(), "gofp_label.pdf")
