@@ -65,7 +65,7 @@ export default function ProductTable({
             const isChecked = selectedKeys.has(key);
             return (
               <tr
-                key={key}
+                key={`${key}_${i}`}
                 className="cursor-pointer"
                 style={{
                   backgroundColor: isSelected

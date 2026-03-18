@@ -25,182 +25,149 @@ function wrapText(ctx, text, maxWidth) {
 }
 
 function drawLabel(ctx, product, sizeInfo) {
-  const lw = sizeInfo.width_mm;
-  const lh = sizeInfo.height_mm;
-  const aspect = lw / lh;
+  // Match desktop: DW=460 fixed, card height from aspect ratio, fonts from pixel height
+  const DW = 460;
+  const lh = Math.round(DW * sizeInfo.height_mm / sizeInfo.width_mm);
+  const x0 = (CANVAS_W - DW) / 2;
+  const y0 = Math.max(16, (CANVAS_H - lh) / 2);
 
-  // Scale card to fit canvas with padding
-  const pad = 30;
-  let cardW = CANVAS_W - pad * 2;
-  let cardH = cardW / aspect;
-  if (cardH > CANVAS_H - pad * 2) {
-    cardH = CANVAS_H - pad * 2;
-    cardW = cardH * aspect;
-  }
-  const cx = (CANVAS_W - cardW) / 2;
-  const cy = (CANVAS_H - cardH) / 2;
+  const RATIO = 1.61;
+  const m = Math.round(lh * 0.10);
+  const fPro = Math.max(9, Math.round(lh * 0.085));
+  const fTitle = Math.round(fPro * RATIO);
+  const fPrice = Math.round(fTitle * RATIO);
 
-  // Shadow
+  // Shadow + card
   ctx.shadowColor = 'rgba(0,0,0,0.15)';
   ctx.shadowBlur = 12;
   ctx.shadowOffsetX = 2;
   ctx.shadowOffsetY = 4;
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(cx, cy, cardW, cardH);
+  ctx.fillRect(x0, y0, DW, lh);
   ctx.shadowColor = 'transparent';
-
-  // Border
-  ctx.strokeStyle = '#D8DADF';
+  ctx.strokeStyle = '#BBBBBB';
   ctx.lineWidth = 1;
-  ctx.strokeRect(cx, cy, cardW, cardH);
+  ctx.strokeRect(x0, y0, DW, lh);
 
   if (!product) return;
 
   const article = cleanArticle(product.article || '');
-  const price = formatPrice(product.pvente || 0);
-  const ppro = formatPrice(product.ppro || 0);
-  const pproHtva = formatPrice(product.ppro_htva || 0);
+  const priceText = formatPrice(product.pvente || 0) + '\u20AC';
+  const proText = `PPHT ${formatPrice(product.ppro_htva || 0)}   PPTTC ${formatPrice(product.ppro || 0)}`;
 
-  // Golden ratio fonts
-  const fPro = Math.max(9, Math.round(lh * 0.085));
-  const fTitle = Math.round(fPro * 1.61);
-  const fPrice = Math.round(fTitle * 1.61);
-
-  // Scale factor from mm to card px
-  const sf = cardW / lw;
-  const margin = 3 * sf;
-
-  // Article
+  // Article — top, bold, centred, up to 2 lines
   ctx.fillStyle = '#000';
-  ctx.font = `bold ${fTitle * sf}px Inter, system-ui, sans-serif`;
-  const maxTextW = cardW - margin * 2;
-  let lines = wrapText(ctx, article, maxTextW);
-  if (lines.length > 2) {
-    lines = lines.slice(0, 2);
-    lines[1] = lines[1] + '...';
-  }
-  const lineH = fTitle * sf * 1.2;
-  const artY = cy + margin + fTitle * sf;
+  ctx.font = `bold ${fTitle}px Arial, Helvetica, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  let lines = wrapText(ctx, article, DW - 2 * m);
+  if (lines.length > 2) lines = [lines[0], lines[1] + '...'];
   for (let i = 0; i < lines.length; i++) {
-    const tw = ctx.measureText(lines[i]).width;
-    ctx.fillText(lines[i], cx + (cardW - tw) / 2, artY + i * lineH);
+    ctx.fillText(lines[i], x0 + DW / 2, y0 + m + i * (fTitle + 2));
   }
 
-  // Price
-  const priceText = price + ' \u20AC';
-  ctx.font = `bold ${fPrice * sf}px Inter, system-ui, sans-serif`;
-  const artBlockH = lines.length * lineH;
-  const remainH = cardH - artBlockH - margin * 2;
-  const priceY = cy + margin + artBlockH + remainH / 2 + (fPrice * sf) / 3;
-  const pw = ctx.measureText(priceText).width;
-  ctx.fillText(priceText, cx + (cardW - pw) / 2, priceY);
+  // Price — centred vertically
+  ctx.font = `bold ${fPrice}px Arial, Helvetica, sans-serif`;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(priceText, x0 + DW / 2, y0 + lh / 2);
 
-  // Pro prices
-  const proText = `PPHT ${pproHtva}   PPTTC ${ppro}`;
+  // Pro prices — bottom-right, grey
   ctx.fillStyle = '#444444';
-  ctx.font = `${fPro * sf}px Inter, system-ui, sans-serif`;
-  const proW = ctx.measureText(proText).width;
-  ctx.fillText(proText, cx + cardW - margin - proW, cy + cardH - margin);
+  ctx.font = `${fPro}px Arial, Helvetica, sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(proText, x0 + DW - m, y0 + lh - m);
+
+  // Reset
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
 }
 
 function drawA4(ctx, product, bgImage) {
-  const aspect = 297 / 210; // portrait ratio (width/height in landscape = 297/210)
-  const pad = 20;
+  // Match desktop: DW=460, ah from aspect ratio, fonts from pixel height
+  const DW = 460;
+  const ah = Math.round(DW * 210 / 297);
+  const x0 = (CANVAS_W - DW) / 2;
+  const y0 = Math.max(8, (CANVAS_H - ah) / 2);
 
-  // A4 landscape: wider than tall
-  const a4Aspect = 297 / 210;
-  let cardW = CANVAS_W - pad * 2;
-  let cardH = cardW / a4Aspect;
-  if (cardH > CANVAS_H - pad * 2) {
-    cardH = CANVAS_H - pad * 2;
-    cardW = cardH * a4Aspect;
-  }
-  const cx = (CANVAS_W - cardW) / 2;
-  const cy = (CANVAS_H - cardH) / 2;
+  const RATIO = 1.61;
+  const m = Math.round(ah * 0.06);
+  const fPro = Math.max(9, Math.round(ah * 0.065));
+  const fTitle = Math.round(fPro * RATIO * 1.44);
+  const fPrice = Math.round(fPro * RATIO * RATIO * 1.2);
 
-  // Shadow
+  // Shadow + card
   ctx.shadowColor = 'rgba(0,0,0,0.15)';
   ctx.shadowBlur = 12;
   ctx.shadowOffsetX = 2;
   ctx.shadowOffsetY = 4;
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(cx, cy, cardW, cardH);
+  ctx.fillRect(x0, y0, DW, ah);
   ctx.shadowColor = 'transparent';
 
   // Background image
   if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
-    ctx.drawImage(bgImage, cx, cy, cardW, cardH);
+    ctx.drawImage(bgImage, x0, y0, DW, ah);
   }
 
-  // Border
-  ctx.strokeStyle = '#D8DADF';
+  ctx.strokeStyle = '#BBBBBB';
   ctx.lineWidth = 1;
-  ctx.strokeRect(cx, cy, cardW, cardH);
+  ctx.strokeRect(x0, y0, DW, ah);
 
   if (!product) return;
 
   const article = cleanArticle(product.article || '');
-  const price = formatPrice(product.pvente || 0);
-  const ppro = formatPrice(product.ppro || 0);
-  const pproHtva = formatPrice(product.ppro_htva || 0);
+  const priceText = formatPrice(product.pvente || 0) + '\u20AC';
   const pl = product.p_l || '';
   const origine = product.origine || '';
+  const proText = `PPHT ${formatPrice(product.ppro_htva || 0)}   PPTTC ${formatPrice(product.ppro || 0)}`;
 
-  const headerH = (90 / 210) * cardH;
-  const safeH = cardH - headerH;
-  const margin = 10;
+  // Safe-zone geometry (header = 90/210 of page)
+  const HEADER_FRAC = 90 / 210;
+  const headerPx = Math.round(ah * HEADER_FRAC);
+  const safeTop = y0 + headerPx;
+  const safeH = ah - headerPx;
 
-  // Article
-  const fTitle = Math.round(cardH * 0.065 * 1.44);
+  // Article — just below header, centred
   ctx.fillStyle = '#000';
-  ctx.font = `bold ${fTitle}px Inter, system-ui, sans-serif`;
-  const maxW = cardW - margin * 2;
-  let lines = wrapText(ctx, article, maxW);
-  if (lines.length > 2) {
-    lines = lines.slice(0, 2);
-    lines[1] = lines[1] + '...';
-  }
-  const lineH = fTitle * 1.2;
-  const artY = cy + headerH + fTitle * 1.2;
-  for (let i = 0; i < lines.length; i++) {
-    const tw = ctx.measureText(lines[i]).width;
-    ctx.fillText(lines[i], cx + (cardW - tw) / 2, artY + i * lineH);
-  }
+  ctx.font = `bold ${fTitle}px Arial, Helvetica, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  let lines = wrapText(ctx, article, DW - 2 * m);
+  if (lines.length > 2) lines = [lines[0], lines[1] + '...'];
+  ctx.fillText(
+    lines.join(' '),
+    x0 + DW / 2,
+    safeTop + Math.round(safeH * 0.02) + fTitle / 2
+  );
 
-  // Price
-  const fPrice = Math.round(cardH * 0.12 * 1.2);
-  const priceText = price + ' \u20AC';
-  ctx.font = `bold ${fPrice}px Inter, system-ui, sans-serif`;
-  const priceY = cy + headerH + safeH * 0.46 + fPrice / 3;
-  const pw = ctx.measureText(priceText).width;
-  ctx.fillText(priceText, cx + (cardW - pw) / 2, priceY);
+  // Price — centred in safe zone
+  ctx.font = `bold ${fPrice}px Arial, Helvetica, sans-serif`;
+  ctx.fillText(priceText, x0 + DW / 2, safeTop + Math.round(safeH * 0.46));
 
-  // P/L bottom-left
+  // P/L — bottom-left
   if (pl) {
-    const fSmall = Math.round(cardH * 0.04);
-    ctx.font = `${fSmall}px Inter, system-ui, sans-serif`;
-    const plY = cy + headerH + safeH * 0.72;
-    ctx.fillText(String(pl), cx + margin, plY);
+    ctx.font = `${fPro}px Arial, Helvetica, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.fillText(String(pl), x0 + m, safeTop + Math.round(safeH * 0.72));
   }
 
-  // Origine bottom-right
+  // Origine — bottom-right
   if (origine) {
-    const fSmall = Math.round(cardH * 0.04);
-    ctx.font = `${fSmall}px Inter, system-ui, sans-serif`;
-    const origText = `Origine : ${origine}`;
-    const ow = ctx.measureText(origText).width;
-    const origY = cy + headerH + safeH * 0.72;
-    ctx.fillText(origText, cx + cardW - margin - ow, origY);
+    ctx.font = `${fPro}px Arial, Helvetica, sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.fillText(`Origine : ${origine}`, x0 + DW - m, safeTop + Math.round(safeH * 0.72));
   }
 
-  // Pro prices
-  const fPro = Math.round(cardH * 0.035);
+  // Pro prices — bottom-right, grey
   ctx.fillStyle = '#444444';
-  ctx.font = `${fPro}px Inter, system-ui, sans-serif`;
-  const proText = `PPHT ${pproHtva}    PPTTC ${ppro}`;
-  const proW = ctx.measureText(proText).width;
-  const proY = cy + headerH + safeH * 0.85;
-  ctx.fillText(proText, cx + cardW - margin - proW, proY);
+  ctx.font = `${fPro}px Arial, Helvetica, sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.fillText(proText, x0 + DW - m, safeTop + Math.round(safeH * 0.85));
+
+  // Reset
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
 }
 
 export default function PreviewCanvas({ product, format, bgImage }) {
