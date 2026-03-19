@@ -159,10 +159,16 @@ function AppInner() {
         await printLabelApi(pdfBytes, printer);
         toast('Etiquette imprimee');
       } catch {
-        // Print server unavailable — download PDF as fallback
-        const name = (store.selectedProduct.article || 'etiquette').slice(0, 30).replace(/[^a-zA-Z0-9]/g, '_');
-        downloadPdf(pdfBytes, `Label_${name}.pdf`);
-        toast('PDF etiquette telecharge (serveur hors ligne)');
+        // Print server unavailable — open browser print dialog as fallback
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const printWindow = window.open(url, '_blank');
+        if (printWindow) {
+          printWindow.addEventListener('load', () => {
+            printWindow.print();
+          });
+        }
+        toast('Impression via navigateur');
       }
       const newHistory = addHistory(store.selectedProduct, 'label');
       store.setHistory(newHistory);
@@ -219,10 +225,15 @@ function AppInner() {
         addHistory(p, 'label');
       }
       if (fallbackPdfs.length > 0) {
-        // Merge all failed labels into one PDF download
+        // Merge all labels into one PDF and open browser print dialog
         const merged = await mergePdfs(fallbackPdfs);
-        downloadPdf(merged, `Labels_batch_${products.length}.pdf`);
-        toast(`${fallbackPdfs.length} etiquettes telechargees (serveur hors ligne)`);
+        const blob = new Blob([merged], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const printWindow = window.open(url, '_blank');
+        if (printWindow) {
+          printWindow.addEventListener('load', () => { printWindow.print(); });
+        }
+        toast(`${fallbackPdfs.length} etiquettes — impression via navigateur`);
       } else {
         toast(`${printed} etiquettes imprimees`);
       }
