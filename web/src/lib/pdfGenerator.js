@@ -101,13 +101,14 @@ export async function generateLabel(product, sizeOpts = { width_mm: 89, height_m
   const priceX = (width - priceWidth) / 2;
   page.drawText(priceText, { x: priceX, y: Math.max(priceY, LABEL_MARGIN + F_PRO + 4), size: F_PRICE, font: fontBold, color: rgb(0, 0, 0) });
 
-  // Pro prices: bottom-right, grey
-  const proText = `PPHT ${pproHtva}   PPTTC ${ppro}`;
-  const proWidth = fontRegular.widthOfTextAtSize(proText, F_PRO);
+  // Pro prices: bottom-right, dark grey — raised above margin to avoid clipping
+  const proText = `PPHT ${pproHtva}  PPTTC ${ppro}`;
+  const proFontSize = Math.max(F_PRO, 7);
+  const proWidth = fontRegular.widthOfTextAtSize(proText, proFontSize);
   const proX = width - LABEL_MARGIN - proWidth;
-  const proY = LABEL_MARGIN;
+  const proY = LABEL_MARGIN + 1; // +1pt to clear printer clip zone
   const grey = rgb(0x44 / 255, 0x44 / 255, 0x44 / 255);
-  page.drawText(proText, { x: proX, y: proY, size: F_PRO, font: fontRegular, color: grey });
+  page.drawText(proText, { x: proX, y: proY, size: proFontSize, font: fontRegular, color: grey });
 
   return pdfDoc.save();
 }
