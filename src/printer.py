@@ -53,7 +53,9 @@ class DymoPrinter:
         sumatra = _find_sumatra()
         if sumatra:
             subprocess.run(
-                [sumatra, "-print-to", printer_name, "-silent", pdf_path],
+                [sumatra, "-print-to", printer_name, "-silent",
+                 "-print-settings", "fit",
+                 pdf_path],
                 check=True)
             return
         # Fallback: open with the system PDF viewer and trigger the print verb.
