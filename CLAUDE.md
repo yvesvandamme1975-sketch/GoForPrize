@@ -50,7 +50,16 @@
 - Config: `config.json`, history: `history.json`
 - DO NOT modify `requirements.txt` without checking Railway impact
 
+## Dymo Printing
+- Label PDF: 89mm × 36mm **landscape** (DO NOT change to portrait)
+- macOS/CUPS: `media=Custom.36x89mm`, `orientation-requested=4`, `fit-to-page`
+- Windows: SumatraPDF with `-print-settings fit` (best), fallback `os.startfile("print")`
+- Windows driver MUST be set to **99012 Large Address** (89×36mm) in Printer Preferences
+- Python printer code (`src/printer.py`) and PDF generator (`src/pdf_generator.py`) were stable as of commit `3455209` (March 6) — do NOT refactor without testing on actual Dymo hardware
+- GitHub Actions builds .exe on every push to `main` → releases at `latest` tag
+
 ## Customer
 - Go For Prize — Belgian retail (currency EUR, locale fr-BE)
 - Uses pre-printed A4 paper (header zone = top 90mm reserved)
-- Dymo LabelWriter for price labels (89x36mm default)
+- Dymo LabelWriter 550 for price labels (89×36mm, label type 99012 Large Address)
+- Setup: Android tablet (web app) + Windows PC with Dymo (runs .exe)
