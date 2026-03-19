@@ -1,5 +1,6 @@
 [build]
 watchPatterns = ["web/**"]
+nixpacksConfigPath = "nixpacks.toml"
 
 [deploy]
 startCommand = "cd web && npm start"

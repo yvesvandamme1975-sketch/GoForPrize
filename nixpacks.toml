@@ -1,11 +1,14 @@
 [phases.setup]
 nixPkgs = ["nodejs_22"]
+onlyIncludeFiles = ["web"]
 
 [phases.install]
 cmds = ["cd web && npm install"]
+dependsOn = ["setup"]
 
 [phases.build]
 cmds = ["cd web && npm run build"]
+dependsOn = ["install"]
 
 [start]
 cmd = "cd web && npm start"
