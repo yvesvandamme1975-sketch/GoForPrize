@@ -824,7 +824,7 @@ class MainWindow:
             return
         name = self._config.get("usb_printer")
         if not name or name == "(aucune)":
-            # Auto-detect: try to find an available printer
+            # Auto-detect: prefer Dymo/Label printer, else first available
             available = [p for p in DymoPrinter.list_dymo_printers()
                          if p and p != "(aucune)"]
             if not available:
@@ -832,7 +832,9 @@ class MainWindow:
                     "Aucune imprimante trouvée.\n"
                     "Vérifiez que l'imprimante est branchée et allumée.")
                 return
-            name = available[0]
+            dymo = [p for p in available
+                    if "dymo" in p.lower() or "label" in p.lower()]
+            name = dymo[0] if dymo else available[0]
             self._config.set("usb_printer", name)
             self._config.save()
         size = self._config.get_label_size_info()
@@ -935,7 +937,9 @@ class MainWindow:
                     "Aucune imprimante trouvée.\n"
                     "Vérifiez que l'imprimante est branchée et allumée.")
                 return
-            name = available[0]
+            dymo = [p for p in available
+                    if "dymo" in p.lower() or "label" in p.lower()]
+            name = dymo[0] if dymo else available[0]
             self._config.set("usb_printer", name)
             self._config.save()
         size = self._config.get_label_size_info()
