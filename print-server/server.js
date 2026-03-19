@@ -44,50 +44,41 @@ function listPrinters() {
 
 function printPdf(pdfPath, printerName) {
   if (process.platform === 'win32') {
-    // Try common SumatraPDF locations
-    const candidates = [
-      path.join(
-        process.env.LOCALAPPDATA || '',
-        'SumatraPDF',
-        'SumatraPDF.exe',
-      ),
-      path.join(
-        process.env['ProgramFiles'] || '',
-        'SumatraPDF',
-        'SumatraPDF.exe',
-      ),
-      path.join(
-        process.env['ProgramFiles(x86)'] || '',
-        'SumatraPDF',
-        'SumatraPDF.exe',
-      ),
+    // Strategy 1: SumatraPDF (if installed — best quality)
+    const sumatraCandidates = [
+      path.join(process.env.LOCALAPPDATA || '', 'SumatraPDF', 'SumatraPDF.exe'),
+      path.join(process.env['ProgramFiles'] || '', 'SumatraPDF', 'SumatraPDF.exe'),
+      path.join(process.env['ProgramFiles(x86)'] || '', 'SumatraPDF', 'SumatraPDF.exe'),
     ];
-    const sumatraPath = candidates.find(
-      (p) => p && fs.existsSync(p),
-    );
-    if (!sumatraPath) {
-      throw new Error(
-        'SumatraPDF introuvable. Installez-le ou ajoutez-le au PATH.',
-      );
+    const sumatraPath = sumatraCandidates.find((p) => p && fs.existsSync(p));
+
+    if (sumatraPath) {
+      execFileSync(sumatraPath, ['-print-to', printerName, '-silent', pdfPath]);
+      return;
     }
-    execFileSync(sumatraPath, [
-      '-print-to',
-      printerName,
-      '-silent',
-      pdfPath,
-    ]);
+
+    // Strategy 2: PowerShell (no extra install needed)
+    const psScript = `
+      Add-Type -AssemblyName System.Drawing
+      $doc = New-Object System.Drawing.Printing.PrintDocument
+      $doc.PrinterSettings.PrinterName = '${printerName.replace(/'/g, "''")}'
+      Start-Process -FilePath "${pdfPath.replace(/"/g, '`"')}" -Verb PrintTo -ArgumentList '"${printerName.replace(/"/g, '`"')}"' -WindowStyle Hidden -Wait
+    `;
+    try {
+      execFileSync('powershell', ['-NoProfile', '-Command', psScript], { timeout: 15000 });
+      return;
+    } catch {
+      // Strategy 3: Windows print verb (last resort)
+      execFileSync('cmd', ['/c', 'start', '/min', '', pdfPath], { timeout: 10000 });
+    }
   } else {
-    execFileSync('lp', [
-      '-d',
-      printerName,
-      '-o',
-      'media=Custom.36x89mm',
-      '-o',
-      'orientation-requested=4',
-      '-o',
-      'fit-to-page',
-      pdfPath,
-    ]);
+    // macOS / Linux: use CUPS lp command
+    const args = ['-d', printerName, '-o', 'fit-to-page', pdfPath];
+    // Only add media size for label printers (not A4)
+    if (printerName.toLowerCase().includes('dymo') || printerName.toLowerCase().includes('label')) {
+      args.splice(2, 0, '-o', 'media=Custom.36x89mm', '-o', 'orientation-requested=4');
+    }
+    execFileSync('lp', args);
   }
 }
 

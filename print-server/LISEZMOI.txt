@@ -1,0 +1,24 @@
+SERVEUR D'IMPRESSION GOFORPRICE
+================================
+
+Ce petit programme permet d'imprimer directement sur votre
+imprimante Dymo depuis l'application web GoForPrice.
+
+INSTALLATION (une seule fois) :
+1. Installez Node.js : https://nodejs.org (cliquez "LTS")
+2. Branchez votre imprimante Dymo en USB
+3. Verifiez qu'elle apparait dans "Imprimantes et scanners" de Windows
+
+UTILISATION :
+1. Double-cliquez sur "start.bat"
+2. Gardez la fenetre noire ouverte
+3. Ouvrez GoForPrice dans votre navigateur
+4. Dans Parametres, l'URL est deja configuree (localhost:9100)
+5. Cliquez "Tester" pour voir votre Dymo dans la liste
+6. Selectionnez votre Dymo et cliquez "Enregistrer"
+7. Cliquez "Imprimer etiquette" → l'etiquette sort sur la Dymo !
+
+OPTIONNEL (demarrage automatique) :
+- Copiez le raccourci de start.bat dans :
+  C:\Users\VOTRE_NOM\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+- Le serveur demarrera automatiquement au demarrage de Windows
