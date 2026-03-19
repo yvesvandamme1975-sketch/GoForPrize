@@ -671,12 +671,17 @@ class MainWindow:
                                 fill="#C8C8C8", outline="")
             c.create_rectangle(x0, y0, x0+DW, y0+lh,
                                 fill="white", outline="#BBBBBB", width=1)
-            c.create_text(x0 + DW//2, y0+m,
+            art_id = c.create_text(x0 + DW//2, y0+m,
                           text=clean_article(p.get("article", "")),
                           font=("Arial", f_title, "bold"),
                           anchor="n", fill="black", width=DW - 2*m,
                           justify="center")
-            c.create_text(x0 + DW//2, y0 + lh//2,
+            # Position price below article, centred in remaining space
+            art_bbox = c.bbox(art_id)
+            art_bottom = art_bbox[3] if art_bbox else y0 + m + f_title * 2
+            pro_top = y0 + lh - m - f_pro
+            price_y = art_bottom + (pro_top - art_bottom) // 2
+            c.create_text(x0 + DW//2, price_y,
                           text=f"{fp(p.get('pvente', 0))}€",
                           font=("Arial", f_price, "bold"),
                           anchor="center", fill="black")
