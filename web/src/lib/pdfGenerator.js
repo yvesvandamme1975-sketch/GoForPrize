@@ -58,9 +58,9 @@ function wrapText(text, font, fontSize, maxWidth) {
  * @returns {Promise<Uint8Array>} PDF bytes
  */
 export async function generateLabel(product, sizeOpts = { width_mm: 89, height_mm: 36 }) {
-  // Dymo feeds portrait: narrow side = width, long side = height
-  const width = sizeOpts.height_mm * MM;   // 36mm
-  const height = sizeOpts.width_mm * MM;   // 89mm
+  // Landscape: 89mm wide × 36mm tall (matches Python pdf_generator.py)
+  const width = sizeOpts.width_mm * MM;    // 89mm
+  const height = sizeOpts.height_mm * MM;  // 36mm
 
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([width, height]);
