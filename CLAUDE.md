@@ -49,6 +49,9 @@
 - Build: `pyinstaller GoForPrice.spec`
 - Config: `config.json`, history: `history.json`
 - DO NOT modify `requirements.txt` without checking Railway impact
+- Product keys in UI include row index `(article, pvente, idx)` — needed for duplicate Excel rows
+- Auto-detect printer prefers "dymo"/"label" in name; customer must delete `config.json` to reset saved printer
+- `.exe` build: GitHub Actions on push to `main`; also `gh workflow run "Build Windows EXE"`; JS-only changes don't need rebuild
 
 ## Dymo Printing
 - Label PDF: 89mm × 36mm **landscape** (DO NOT change to portrait)
@@ -59,6 +62,9 @@
 - Windows driver MUST be set to **99012 Large Address** (89×36mm) in Printer Preferences
 - Python printer code (`src/printer.py`) and PDF generator (`src/pdf_generator.py`) were stable as of commit `3455209` (March 6) — do NOT refactor without testing on actual Dymo hardware
 - GitHub Actions builds .exe on every push to `main` → releases at `latest` tag
+- ALWAYS test on real Dymo hardware before shipping — preview/PDF can look correct but print wrong
+- macOS CUPS: if Dymo shows offline, run `cupsenable DYMO_LabelWriter_550 && cancel -a DYMO_LabelWriter_550`
+- Web app JS pdfGenerator.js and Python pdf_generator.py MUST produce identical page sizes (both 89×36mm landscape)
 
 ## Customer
 - Go For Prize — Belgian retail (currency EUR, locale fr-BE)
