@@ -124,12 +124,12 @@ class PdfGenerator:
         ppttc_str = f"{ppro:.2f}".replace(".", ",")
         pro_str   = f"PPHT {ppht_str}   PPTTC {ppttc_str}"
 
-        # Dymo feeds portrait: swap so narrow side is width, long side is height
-        page_w = height_mm * mm   # 36mm = narrow (feed width)
-        page_h = width_mm  * mm   # 89mm = long (feed direction)
+        # Landscape: 89mm wide × 36mm tall
+        page_w = width_mm  * mm   # 89mm
+        page_h = height_mm * mm   # 36mm
         margin = 3 * mm
 
-        # Golden-ratio font stack (8 → 13 → 21 pt)
+        # Golden-ratio font stack scaled for 36mm height
         RATIO   = 1.61
         f_pro   = 8
         f_title = round(f_pro   * RATIO)   # 13
@@ -137,44 +137,46 @@ class PdfGenerator:
 
         c = rl_canvas.Canvas(output_path, pagesize=(page_w, page_h))
 
-        # ── Article title — top-left, bold, up to 2 lines ──────────
+        # ── Article title — top, bold, centred, up to 2 lines ─────
         max_text_w = page_w - 2 * margin
         c.setFont("Helvetica-Bold", f_title)
         c.setFillColor(colors.black)
 
-        full_w = stringWidth(article, "Helvetica-Bold", f_title)
-        cx = page_w / 2
-        if full_w <= max_text_w:
-            # single line — centred
-            c.drawCentredString(cx, page_h - margin - f_title, article)
-            article_bottom = page_h - margin - f_title - f_title * 0.3
-        else:
-            # wrap to 2 lines at last space that fits
-            words  = article.split()
-            line1  = ""
-            for word in words:
-                test = (line1 + " " + word).strip()
-                if stringWidth(test, "Helvetica-Bold", f_title) <= max_text_w:
-                    line1 = test
-                else:
-                    break
-            line2 = article[len(line1):].strip()
-            line_gap = f_title + 2
-            c.drawCentredString(cx, page_h - margin - f_title,           line1)
-            c.drawCentredString(cx, page_h - margin - f_title - line_gap, line2)
-            article_bottom = page_h - margin - f_title - line_gap - f_title * 0.3
+        # Word-wrap
+        words = article.split()
+        lines = []
+        current = ""
+        for word in words:
+            test = (current + " " + word).strip()
+            if stringWidth(test, "Helvetica-Bold", f_title) <= max_text_w:
+                current = test
+            else:
+                if current:
+                    lines.append(current)
+                current = word
+        if current:
+            lines.append(current)
+        if len(lines) > 2:
+            lines = lines[:2]
+            lines[1] = lines[1] + "..."
 
-        # ── Pro prices — bottom-right, no € ─────────────────────────
+        cx = page_w / 2
+        line_gap = f_title + 2
+        for i, line in enumerate(lines):
+            c.drawCentredString(cx, page_h - margin - f_title - i * line_gap, line)
+        article_bottom = page_h - margin - f_title - (len(lines) - 1) * line_gap - f_title * 0.3
+
+        # ── Pro prices — bottom-right, grey ────────────────────────
         c.setFont("Helvetica", f_pro)
         c.setFillColor(colors.HexColor("#444444"))
-        c.drawRightString(page_w - margin, margin, pro_str)
+        c.drawRightString(page_w - margin, margin + 1, pro_str)
         pro_top = margin + f_pro + 2
 
         # ── Price — centred in space between article and pro prices ──
         c.setFont("Helvetica-Bold", f_price)
         c.setFillColor(colors.black)
         price_y = pro_top + (article_bottom - pro_top) / 2 - f_price / 2
-        c.drawCentredString(page_w / 2, max(price_y, pro_top), price_str)
+        c.drawCentredString(cx, max(price_y, pro_top), price_str)
 
         c.save()
         return output_path
