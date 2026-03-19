@@ -3,6 +3,14 @@ name: Build Windows EXE
 on:
   push:
     branches: [main]
+    paths:
+      - 'app.py'
+      - 'src/**'
+      - 'ui/**'
+      - 'assets/**'
+      - 'requirements.txt'
+      - 'GoForPrice.spec'
+      - '.github/workflows/build-windows.yml'
   workflow_dispatch:
 
 jobs:
@@ -29,4 +37,18 @@ jobs:
         with:
           name: GoForPrice-Windows
           path: dist\GoForPrice.exe
-          retention-days: 30
+          retention-days: 90
+
+      - name: Create/Update Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: GoForPrice — Derniere version
+          body: |
+            Derniere version de GoForPrice.exe
+            Telechargez le fichier ci-dessous et lancez-le sur Windows.
+          files: dist/GoForPrice.exe
+          make_latest: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
