@@ -155,21 +155,7 @@ function AppInner() {
       const sizeOpts = getLabelSizeInfo();
       const pdfBytes = await generateLabel(store.selectedProduct, sizeOpts);
       const printer = getConfig('selected_printer');
-      try {
-        await printLabelApi(pdfBytes, printer);
-        toast('Etiquette imprimee');
-      } catch {
-        // Print server unavailable — open browser print dialog as fallback
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const printWindow = window.open(url, '_blank');
-        if (printWindow) {
-          printWindow.addEventListener('load', () => {
-            printWindow.print();
-          });
-        }
-        toast('Impression via navigateur');
-      }
+      await printLabelApi(pdfBytes, printer);
       const newHistory = addHistory(store.selectedProduct, 'label');
       store.setHistory(newHistory);
     } catch (err) {
@@ -212,31 +198,12 @@ function AppInner() {
     try {
       const sizeOpts = getLabelSizeInfo();
       const printer = getConfig('selected_printer');
-      let printed = 0;
-      const fallbackPdfs = [];
       for (const p of products) {
         const pdfBytes = await generateLabel(p, sizeOpts);
-        try {
-          await printLabelApi(pdfBytes, printer);
-          printed++;
-        } catch {
-          fallbackPdfs.push(pdfBytes);
-        }
+        await printLabelApi(pdfBytes, printer);
         addHistory(p, 'label');
       }
-      if (fallbackPdfs.length > 0) {
-        // Merge all labels into one PDF and open browser print dialog
-        const merged = await mergePdfs(fallbackPdfs);
-        const blob = new Blob([merged], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const printWindow = window.open(url, '_blank');
-        if (printWindow) {
-          printWindow.addEventListener('load', () => { printWindow.print(); });
-        }
-        toast(`${fallbackPdfs.length} etiquettes — impression via navigateur`);
-      } else {
-        toast(`${printed} etiquettes imprimees`);
-      }
+      toast(`${products.length} etiquettes imprimees`);
       store.setHistory(getHistory());
     } catch (err) {
       toast('Erreur batch: ' + err.message, 'error');
