@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getConfig, setConfig, LABEL_SIZES } from '../lib/config';
 import { checkPrintServer } from '../lib/printClient';
 
@@ -10,7 +10,7 @@ export default function SettingsDialog({ onClose, onStatusUpdate }) {
   const [testStatus, setTestStatus] = useState('');
   const [testing, setTesting] = useState(false);
 
-  const handleTest = async () => {
+  const handleTest = useCallback(async () => {
     setTesting(true);
     setTestStatus('');
     // Temporarily save URL for test
@@ -33,7 +33,12 @@ export default function SettingsDialog({ onClose, onStatusUpdate }) {
     // Restore previous URL if not saving
     setConfig('printer_url', prevUrl);
     setTesting(false);
-  };
+  }, [printerUrl, onStatusUpdate]);
+
+  // Auto-test on open if URL already configured
+  useEffect(() => {
+    if (printerUrl) handleTest();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = () => {
     setConfig('printer_url', printerUrl);
@@ -93,14 +98,22 @@ export default function SettingsDialog({ onClose, onStatusUpdate }) {
               onChange={(e) => setSelectedPrinter(e.target.value)}
               className="w-full px-3 py-2 rounded-md border text-sm"
               style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+              disabled={printers.length === 0}
             >
-              <option value="">-- Selectionner --</option>
+              <option value="">
+                {printers.length === 0 ? 'Cliquez "Tester" pour detecter' : '-- Selectionner --'}
+              </option>
               {printers.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
               ))}
             </select>
+            {printers.length === 0 && printerUrl && !testing && testStatus !== 'Connecte' && (
+              <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>
+                Connectez le serveur d&apos;impression pour voir les imprimantes
+              </p>
+            )}
           </div>
 
           {/* Label size */}

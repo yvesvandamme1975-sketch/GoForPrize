@@ -15,7 +15,7 @@ export async function checkPrintServer() {
 
 export async function printLabel(pdfBytes, printerName, copies = 1) {
   const url = getConfig('printer_url');
-  if (!url) throw new Error("Serveur d'impression non configure");
+  if (!url) throw new Error("Configurez le serveur dans Parametres");
   // Convert Uint8Array to base64
   let binary = '';
   const bytes = new Uint8Array(pdfBytes);
