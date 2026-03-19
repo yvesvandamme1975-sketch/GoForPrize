@@ -502,7 +502,7 @@ class MainWindow:
         fr  = tk.Frame(self._table_frame, bg=bg, cursor="hand2")
         fr.pack(fill="x")
 
-        key = (row.get("article", ""), str(row.get("pvente", 0)))
+        key = (row.get("article", ""), str(row.get("pvente", 0)), idx)
         self._key_to_product[key] = row
         var = tk.BooleanVar(value=(key in self._selected_keys))
         self._check_vars.append((var, key))
