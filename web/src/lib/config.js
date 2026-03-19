@@ -1,7 +1,7 @@
 const STORAGE_PREFIX = 'gfp_';
 
 const DEFAULTS = {
-  printer_url: '',
+  printer_url: 'http://localhost:9100',
   label_size: '89x36',
   last_mapping: null,
   selected_printer: '',

@@ -64,7 +64,7 @@ export default function SettingsDialog({ onClose, onStatusUpdate }) {
                 type="text"
                 value={printerUrl}
                 onChange={(e) => setPrinterUrl(e.target.value)}
-                placeholder="http://192.168.1.x:5000"
+                placeholder="http://localhost:9100"
                 className="flex-1 px-3 py-2 rounded-md border text-sm outline-none"
                 style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
               />

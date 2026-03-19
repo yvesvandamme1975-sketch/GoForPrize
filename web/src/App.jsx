@@ -155,12 +155,19 @@ function AppInner() {
       const sizeOpts = getLabelSizeInfo();
       const pdfBytes = await generateLabel(store.selectedProduct, sizeOpts);
       const printer = getConfig('selected_printer');
-      await printLabelApi(pdfBytes, printer);
+      try {
+        await printLabelApi(pdfBytes, printer);
+        toast('Etiquette imprimee');
+      } catch {
+        // Print server unavailable — download PDF as fallback
+        const name = (store.selectedProduct.article || 'etiquette').slice(0, 30).replace(/[^a-zA-Z0-9]/g, '_');
+        downloadPdf(pdfBytes, `Label_${name}.pdf`);
+        toast('PDF etiquette telecharge (serveur hors ligne)');
+      }
       const newHistory = addHistory(store.selectedProduct, 'label');
       store.setHistory(newHistory);
-      toast('Etiquette imprimee');
     } catch (err) {
-      toast('Erreur impression: ' + err.message, 'error');
+      toast('Erreur: ' + err.message, 'error');
     }
   }, [store, toast]);
 
@@ -199,18 +206,27 @@ function AppInner() {
     try {
       const sizeOpts = getLabelSizeInfo();
       const printer = getConfig('selected_printer');
-      let ok = 0;
+      let printed = 0;
+      const fallbackPdfs = [];
       for (const p of products) {
         const pdfBytes = await generateLabel(p, sizeOpts);
-        await printLabelApi(pdfBytes, printer);
+        try {
+          await printLabelApi(pdfBytes, printer);
+          printed++;
+        } catch {
+          fallbackPdfs.push(pdfBytes);
+        }
         addHistory(p, 'label');
-        ok++;
+      }
+      if (fallbackPdfs.length > 0) {
+        // Merge all failed labels into one PDF download
+        const merged = await mergePdfs(fallbackPdfs);
+        downloadPdf(merged, `Labels_batch_${products.length}.pdf`);
+        toast(`${fallbackPdfs.length} etiquettes telechargees (serveur hors ligne)`);
+      } else {
+        toast(`${printed} etiquettes imprimees`);
       }
       store.setHistory(getHistory());
-      toast(`${ok} etiquettes imprimees`);
-    } catch (err) {
-      toast('Erreur batch: ' + err.message, 'error');
-    }
   }, [getSelectedProducts, store, toast]);
 
   const handleBatchA4 = useCallback(async () => {
