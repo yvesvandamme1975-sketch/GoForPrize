@@ -691,9 +691,9 @@ class MainWindow:
             y0   = max(8, (PH - ah) // 2)
 
             m       = round(ah * 0.06)
-            f_pro   = max(9,  round(ah * 0.065))
-            f_title = round(f_pro   * RATIO * 1.44)   # article +20% +20%
-            f_price = round(f_pro   * RATIO * RATIO * 1.2) # price +20%
+            f_pro   = max(9,  round(ah * 0.04))
+            f_title = round(f_pro   * RATIO * 1.2)
+            f_price = round(f_pro   * RATIO * RATIO)
 
             # Drop-shadow + fallback white card (visible if PDF bg fails to load)
             c.create_rectangle(x0+3, y0+3, x0+DW+3, y0+ah+3,
