@@ -94,21 +94,23 @@ export async function generateLabel(product, sizeOpts = { width_mm: 89, height_m
     page.drawText(lines[i], { x, y, size: articleFontSize, font: fontBold, color: rgb(0, 0, 0) });
   }
 
-  // Price: bold, centred vertically in remaining space
-  const priceText = price + ' \u20AC';
-  const priceY = (height - articleBlockHeight - LABEL_MARGIN) / 2 - F_PRICE / 2 + LABEL_MARGIN;
-  const priceWidth = fontBold.widthOfTextAtSize(priceText, F_PRICE);
-  const priceX = (width - priceWidth) / 2;
-  page.drawText(priceText, { x: priceX, y: Math.max(priceY, LABEL_MARGIN + F_PRO + 4), size: F_PRICE, font: fontBold, color: rgb(0, 0, 0) });
-
-  // Pro prices: bottom-right, dark grey — raised above margin to avoid clipping
+  // Pro prices: bottom-right, dark grey
   const proText = `PPHT ${pproHtva}  PPTTC ${ppro}`;
   const proFontSize = Math.max(F_PRO, 7);
   const proWidth = fontRegular.widthOfTextAtSize(proText, proFontSize);
   const proX = width - LABEL_MARGIN - proWidth;
-  const proY = LABEL_MARGIN + 1; // +1pt to clear printer clip zone
+  const proY = LABEL_MARGIN + 1;
   const grey = rgb(0x44 / 255, 0x44 / 255, 0x44 / 255);
   page.drawText(proText, { x: proX, y: proY, size: proFontSize, font: fontRegular, color: grey });
+
+  // Price: bold, centred in the space BETWEEN article bottom and pro prices top
+  const priceText = price + ' \u20AC';
+  const articleBottom = articleStartY - articleBlockHeight;
+  const proTop = proY + proFontSize + 2;
+  const priceY = proTop + (articleBottom - proTop) / 2 - F_PRICE / 2;
+  const priceWidth = fontBold.widthOfTextAtSize(priceText, F_PRICE);
+  const priceX = (width - priceWidth) / 2;
+  page.drawText(priceText, { x: priceX, y: Math.max(priceY, proTop), size: F_PRICE, font: fontBold, color: rgb(0, 0, 0) });
 
   return pdfDoc.save();
 }

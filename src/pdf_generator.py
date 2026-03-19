@@ -146,6 +146,7 @@ class PdfGenerator:
         if full_w <= max_text_w:
             # single line — centred
             c.drawCentredString(cx, page_h - margin - f_title, article)
+            article_bottom = page_h - margin - f_title - f_title * 0.3
         else:
             # wrap to 2 lines at last space that fits
             words  = article.split()
@@ -160,15 +161,19 @@ class PdfGenerator:
             line_gap = f_title + 2
             c.drawCentredString(cx, page_h - margin - f_title,           line1)
             c.drawCentredString(cx, page_h - margin - f_title - line_gap, line2)
-
-        # ── Price — centred vertically and horizontally ─────────────
-        c.setFont("Helvetica-Bold", f_price)
-        c.drawCentredString(page_w / 2, page_h / 2 - f_price / 2, price_str)
+            article_bottom = page_h - margin - f_title - line_gap - f_title * 0.3
 
         # ── Pro prices — bottom-right, no € ─────────────────────────
         c.setFont("Helvetica", f_pro)
         c.setFillColor(colors.HexColor("#444444"))
         c.drawRightString(page_w - margin, margin, pro_str)
+        pro_top = margin + f_pro + 2
+
+        # ── Price — centred in space between article and pro prices ──
+        c.setFont("Helvetica-Bold", f_price)
+        c.setFillColor(colors.black)
+        price_y = pro_top + (article_bottom - pro_top) / 2 - f_price / 2
+        c.drawCentredString(page_w / 2, max(price_y, pro_top), price_str)
 
         c.save()
         return output_path
