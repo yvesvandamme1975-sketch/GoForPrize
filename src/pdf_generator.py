@@ -124,8 +124,9 @@ class PdfGenerator:
         ppttc_str = f"{ppro:.2f}".replace(".", ",")
         pro_str   = f"PPHT {ppht_str}   PPTTC {ppttc_str}"
 
-        page_w = width_mm  * mm
-        page_h = height_mm * mm
+        # Dymo feeds portrait: swap so narrow side is width, long side is height
+        page_w = height_mm * mm   # 36mm = narrow (feed width)
+        page_h = width_mm  * mm   # 89mm = long (feed direction)
         margin = 3 * mm
 
         # Golden-ratio font stack (8 → 13 → 21 pt)

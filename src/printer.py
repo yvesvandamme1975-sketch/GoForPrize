@@ -40,8 +40,7 @@ class DymoPrinter:
             # Specify label dimensions and landscape so CUPS does not rotate.
             subprocess.run([
                 "lp", "-d", printer_name,
-                "-o", "media=Custom.36x89mm",      # portrait feed: 36 mm wide × 89 mm long
-                "-o", "orientation-requested=4",   # 4 = landscape → CUPS rotates PDF 90° to fit
+                "-o", "media=Custom.36x89mm",
                 "-o", "fit-to-page",
                 pdf_path,
             ], check=True)
