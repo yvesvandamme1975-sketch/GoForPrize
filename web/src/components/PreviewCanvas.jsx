@@ -92,9 +92,9 @@ function drawA4(ctx, product, bgImage) {
 
   const RATIO = 1.61;
   const m = Math.round(ah * 0.06);
-  const fPro = Math.max(9, Math.round(ah * 0.065));
-  const fTitle = Math.round(fPro * RATIO * 1.44);
-  const fPrice = Math.round(fPro * RATIO * RATIO * 1.2);
+  const fPro = Math.max(9, Math.round(ah * 0.04));
+  const fTitle = Math.round(fPro * RATIO * 1.2);
+  const fPrice = Math.round(fPro * RATIO * RATIO);
 
   // Shadow + card
   ctx.shadowColor = 'rgba(0,0,0,0.15)';
@@ -128,22 +128,25 @@ function drawA4(ctx, product, bgImage) {
   const safeTop = y0 + headerPx;
   const safeH = ah - headerPx;
 
-  // Article — just below header, centred
+  // Article — just below header, centred, up to 2 lines
   ctx.fillStyle = '#000';
   ctx.font = `bold ${fTitle}px Arial, Helvetica, sans-serif`;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.textBaseline = 'top';
   let lines = wrapText(ctx, article, DW - 2 * m);
   if (lines.length > 2) lines = [lines[0], lines[1] + '...'];
-  ctx.fillText(
-    lines.join(' '),
-    x0 + DW / 2,
-    safeTop + Math.round(safeH * 0.02) + fTitle / 2
-  );
+  const artY = safeTop + Math.round(safeH * 0.02);
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], x0 + DW / 2, artY + i * (fTitle + 2));
+  }
+  const artBottom = artY + lines.length * (fTitle + 2);
 
-  // Price — centred in safe zone
+  // Price — centred between article bottom and pro prices area
   ctx.font = `bold ${fPrice}px Arial, Helvetica, sans-serif`;
-  ctx.fillText(priceText, x0 + DW / 2, safeTop + Math.round(safeH * 0.46));
+  ctx.textBaseline = 'middle';
+  const proArea = safeTop + Math.round(safeH * 0.72);
+  const priceY = artBottom + (proArea - artBottom) / 2;
+  ctx.fillText(priceText, x0 + DW / 2, priceY);
 
   // P/L — bottom-left
   if (pl) {
