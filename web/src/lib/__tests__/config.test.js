@@ -10,8 +10,8 @@ describe('config', () => {
     expect(getConfig('label_size')).toBe('89x36');
   });
 
-  it('getConfig("printer_url") returns "" by default', () => {
-    expect(getConfig('printer_url')).toBe('');
+  it('getConfig("printer_url") returns localhost default', () => {
+    expect(getConfig('printer_url')).toBe('http://localhost:9100');
   });
 
   it('getConfig("last_mapping") returns null by default', () => {

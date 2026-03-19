@@ -227,6 +227,9 @@ function AppInner() {
         toast(`${printed} etiquettes imprimees`);
       }
       store.setHistory(getHistory());
+    } catch (err) {
+      toast('Erreur batch: ' + err.message, 'error');
+    }
   }, [getSelectedProducts, store, toast]);
 
   const handleBatchA4 = useCallback(async () => {
