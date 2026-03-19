@@ -48,16 +48,38 @@ class DymoPrinter:
 
     @staticmethod
     def _win_print(pdf_path: str, printer_name: str) -> None:
-        """Print a PDF on Windows using SumatraPDF if available, else shell print."""
-        # Try SumatraPDF silent print (no dialog, respects printer choice)
+        """Print a PDF on Windows — silent, no dialog."""
+        # Strategy 1: SumatraPDF (best quality, no dialog)
         sumatra = _find_sumatra()
         if sumatra:
             subprocess.run(
                 [sumatra, "-print-to", printer_name, "-silent", pdf_path],
                 check=True)
             return
-        # Fallback: open with the system PDF viewer and trigger the print verb.
-        # The user may see a brief dialog depending on the installed viewer.
+        # Strategy 2: win32api ShellExecute with "printto" verb (silent)
+        try:
+            import win32api
+            win32api.ShellExecute(
+                0, "printto", os.path.abspath(pdf_path),
+                f'"{printer_name}"', ".", 0)
+            return
+        except Exception:
+            pass
+        # Strategy 3: PowerShell Start-Process -Verb PrintTo (no dialog)
+        try:
+            ps_cmd = (
+                f'Start-Process -FilePath "{os.path.abspath(pdf_path)}" '
+                f'-Verb PrintTo '
+                f'-ArgumentList \\"{printer_name}\\" '
+                f'-WindowStyle Hidden -Wait'
+            )
+            subprocess.run(
+                ["powershell", "-NoProfile", "-Command", ps_cmd],
+                check=True, timeout=15)
+            return
+        except Exception:
+            pass
+        # Strategy 4: last resort — os.startfile (may show dialog)
         os.startfile(os.path.abspath(pdf_path), "print")
 
     @staticmethod
