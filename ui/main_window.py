@@ -945,9 +945,9 @@ class MainWindow:
         size = self._config.get_label_size_info()
         logo = self._logo_path()
         errors = []
-        for product in products:
+        for i, product in enumerate(products):
             try:
-                tmp = os.path.join(tempfile.gettempdir(), "gofp_label_batch.pdf")
+                tmp = os.path.join(tempfile.gettempdir(), f"gofp_label_batch_{i}.pdf")
                 PdfGenerator.generate_label(
                     product, tmp, logo,
                     width_mm=size["width_mm"],
