@@ -52,6 +52,9 @@
 - Product keys in UI include row index `(article, pvente, idx)` — needed for duplicate Excel rows
 - Auto-detect printer prefers "dymo"/"label" in name; customer must delete `config.json` to reset saved printer
 - `.exe` build: GitHub Actions on push to `main`; also `gh workflow run "Build Windows EXE"`; JS-only changes don't need rebuild
+- A4 preview font multipliers: `fPro=ah*0.04`, `fTitle=fPro*1.61*1.2`, `fPrice=fPro*1.61*1.61` — DO NOT increase, causes overlap with 2-line articles
+- Preview and PDF use DIFFERENT code — fix BOTH when changing layout (preview in `main_window.py` + `PreviewCanvas.jsx`, PDF in `pdf_generator.py` + `pdfGenerator.js`)
+- Customer uses .exe on Windows PC as primary tool — always test .exe, not just web app
 
 ## Dymo Printing
 - Label PDF: 89mm × 36mm **landscape** (DO NOT change to portrait)
