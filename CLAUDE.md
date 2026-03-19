@@ -53,7 +53,9 @@
 ## Dymo Printing
 - Label PDF: 89mm × 36mm **landscape** (DO NOT change to portrait)
 - macOS/CUPS: `media=Custom.36x89mm`, `orientation-requested=4`, `fit-to-page`
-- Windows: SumatraPDF with `-print-settings fit` (best), fallback `os.startfile("print")`
+- Windows: SumatraPDF with `-print-settings fit` (best), then `win32api.ShellExecute("printto")`, then PowerShell, last resort `os.startfile("print")`
+- CRITICAL: `win32api.ShellExecute("printto")` is ASYNC — batch print must use unique temp files per product, not reuse one file
+- Windows fallback `os.startfile("print")` ignores printer_name — always prints to default printer
 - Windows driver MUST be set to **99012 Large Address** (89×36mm) in Printer Preferences
 - Python printer code (`src/printer.py`) and PDF generator (`src/pdf_generator.py`) were stable as of commit `3455209` (March 6) — do NOT refactor without testing on actual Dymo hardware
 - GitHub Actions builds .exe on every push to `main` → releases at `latest` tag
