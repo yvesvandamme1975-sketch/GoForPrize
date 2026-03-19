@@ -1,0 +1,9 @@
+[build]
+watchPatterns = ["web/**"]
+
+[deploy]
+startCommand = "cd web && npm start"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
