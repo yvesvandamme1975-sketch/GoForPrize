@@ -52,11 +52,17 @@ class DymoPrinter:
         # Strategy 1: SumatraPDF (best — silent, respects printer choice)
         sumatra = _find_sumatra()
         if sumatra:
+            # Hide the process window completely on Windows
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = 0  # SW_HIDE
             subprocess.run(
                 [sumatra, "-print-to", printer_name, "-silent",
                  "-print-settings", "fit",
                  pdf_path],
-                check=True)
+                check=True,
+                startupinfo=si,
+                creationflags=0x08000000)  # CREATE_NO_WINDOW
             return
         # Strategy 2: win32api ShellExecute "printto" — sends to specific printer
         try:
@@ -98,12 +104,23 @@ class DymoPrinter:
 
 
 def _find_sumatra() -> str | None:
-    """Return the path to SumatraPDF.exe if installed, else None."""
-    candidates = [
+    """Return the path to SumatraPDF.exe: bundled first, then system install."""
+    # 1. Bundled inside PyInstaller _MEIPASS temp dir
+    meipass = getattr(sys, '_MEIPASS', None)
+    if meipass:
+        bundled = os.path.join(meipass, 'SumatraPDF.exe')
+        if os.path.exists(bundled):
+            return bundled
+    # 2. Next to the running .exe (dev or portable deploy)
+    exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+    local = os.path.join(exe_dir, 'SumatraPDF.exe')
+    if os.path.exists(local):
+        return local
+    # 3. Standard system install paths
+    for path in [
         r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
         r"C:\Program Files (x86)\SumatraPDF\SumatraPDF.exe",
-    ]
-    for path in candidates:
+    ]:
         if os.path.exists(path):
             return path
     return None

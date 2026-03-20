@@ -22,6 +22,7 @@ a = Analysis(
     binaries=fitz_bins + dnd_bins,
     datas=[
         ('assets', 'assets'),          # logo, A4 layout PDF, etc.
+        ('SumatraPDF.exe', '.'),       # bundled for silent Dymo printing
     ] + fitz_datas + dnd_datas + ctk_datas,
     hiddenimports=[
         'tkinterdnd2',

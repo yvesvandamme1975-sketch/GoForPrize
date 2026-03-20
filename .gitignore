@@ -9,6 +9,7 @@ __pycache__/
 build/
 dist/
 *.spec.bak
+SumatraPDF.exe
 
 # App runtime files
 history.json
