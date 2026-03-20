@@ -1,4 +1,4 @@
-import os, sys, tempfile
+import os, sys, tempfile, time
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -881,7 +881,7 @@ class MainWindow:
             messagebox.showwarning("Attention", "Sélectionnez d'abord un article.")
             return
         logo = self._logo_path()
-        tmp_path = os.path.join(tempfile.gettempdir(), "gofp_a4.pdf")
+        tmp_path = os.path.join(tempfile.gettempdir(), f"gofp_a4_{int(time.time())}.pdf")
         try:
             PdfGenerator.generate_a4(self._selected_product, tmp_path, logo)
             self._history.add(self._selected_product, fmt="a4")
