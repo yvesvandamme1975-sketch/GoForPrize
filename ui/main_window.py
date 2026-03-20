@@ -676,11 +676,13 @@ class MainWindow:
                           font=("Arial", f_title, "bold"),
                           anchor="n", fill="black", width=DW - 2*m,
                           justify="center")
-            # Position price below article, centred in remaining space
+            # Price at vertical centre of card (matches PDF layout)
+            price_y = y0 + lh // 2
+            # Clamp: don't overlap article text above
             art_bbox = c.bbox(art_id)
             art_bottom = art_bbox[3] if art_bbox else y0 + m + f_title * 2
-            pro_top = y0 + lh - m - f_pro
-            price_y = art_bottom + (pro_top - art_bottom) // 2
+            if price_y - f_price // 2 < art_bottom + 2:
+                price_y = art_bottom + f_price // 2 + 2
             c.create_text(x0 + DW//2, price_y,
                           text=f"{fp(p.get('pvente', 0))}€",
                           font=("Arial", f_price, "bold"),
