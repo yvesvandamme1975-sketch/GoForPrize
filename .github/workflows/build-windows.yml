@@ -33,12 +33,13 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Download SumatraPDF portable
+        shell: pwsh
         run: |
           curl -L -o SumatraPDF.zip https://www.sumatrapdfreader.org/dl/rel/3.6/SumatraPDF-3.6-64.zip
           7z x SumatraPDF.zip -osumatra_tmp
-          move sumatra_tmp\SumatraPDF-3.6-64.exe SumatraPDF.exe
-          rmdir /s /q sumatra_tmp
-          del SumatraPDF.zip
+          Move-Item sumatra_tmp\SumatraPDF-3.6-64.exe SumatraPDF.exe
+          Remove-Item -Recurse -Force sumatra_tmp
+          Remove-Item SumatraPDF.zip
 
       - name: Build single-file EXE
         run: pyinstaller GoForPrice.spec --clean --noconfirm
