@@ -168,8 +168,8 @@ class PdfGenerator:
         c.drawCentredString(page_w / 2, page_h / 2 - f_price / 2, price_str)
 
         # ── Pro prices — bottom-right, no € ─────────────────────────
-        c.setFont("Helvetica", f_pro)
-        c.setFillColor(colors.HexColor("#444444"))
+        c.setFont("Helvetica-Bold", f_pro + 1)
+        c.setFillColor(colors.black)
         c.drawRightString(page_w - margin, margin, pro_str)
 
         c.save()
