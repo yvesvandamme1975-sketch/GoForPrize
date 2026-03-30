@@ -6,6 +6,7 @@ from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from src.text_cleaner import clean_article
+from src.excel_reader import ExcelReader
 
 PAGE_W, PAGE_H = landscape(A4)
 MARGIN = 15 * mm
@@ -93,7 +94,8 @@ class PdfGenerator:
         # ── Price per litre ── bottom-left ───────────────────────────
         if p_l:
             c.setFont("Helvetica", 18)
-            c.drawString(margin, margin + 24 * mm, p_l)   # +10 mm
+            c.drawString(margin, margin + 24 * mm,
+                         ExcelReader.format_price_per_litre(p_l))   # +10 mm
 
         # ── Origine ── bottom-right ───────────────────────────────────
         if origine:

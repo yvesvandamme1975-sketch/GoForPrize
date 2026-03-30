@@ -104,3 +104,17 @@ class ExcelReader:
     @staticmethod
     def format_price(value: float) -> str:
         return f"{value:.2f}".replace(".", ",")
+
+    @staticmethod
+    def format_price_per_litre(val) -> str:
+        """Format price/litre: '4.77' → '4,77€/L', already formatted strings pass through."""
+        s = str(val or "").strip()
+        if not s:
+            return ""
+        if "€" in s or "/" in s or "L" in s:
+            return s  # already formatted
+        try:
+            num = float(s.replace(",", "."))
+            return f"{num:.2f}".replace(".", ",") + "€/L"
+        except (ValueError, TypeError):
+            return s

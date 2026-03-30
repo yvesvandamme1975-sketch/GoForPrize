@@ -474,7 +474,7 @@ class MainWindow:
 
     # ── Table ─────────────────────────────────────────────────────────
 
-    _MAX_ROWS = 200
+    _MAX_ROWS = 5000
 
     def _populate_table(self, rows: list):
         for w in self._table_frame.winfo_children():
@@ -515,8 +515,8 @@ class MainWindow:
                  width=17, anchor="w",
                  font=("Helvetica", 11), bg=bg, fg=TEXT,
                  padx=8, pady=5).pack(side="left")
-        tk.Label(fr, text=row.get("p_l", "") or "",
-                 width=5, anchor="w",
+        tk.Label(fr, text=ExcelReader.format_price_per_litre(row.get("p_l", "") or ""),
+                 width=8, anchor="w",
                  font=("Helvetica", 10), bg=bg, fg=MUTED,
                  pady=5).pack(side="left")
         tk.Label(fr, text=fp(row.get("pvente", 0)) + "€",
@@ -739,7 +739,7 @@ class MainWindow:
             if p.get("p_l"):
                 c.create_text(x0 + m,
                               safe_top + round(safe_h * 0.72),
-                              text=p.get("p_l", ""),
+                              text=ExcelReader.format_price_per_litre(p.get("p_l", "")),
                               font=("Arial", f_pro), anchor="w", fill="black")
 
             # Origine — bottom-right
