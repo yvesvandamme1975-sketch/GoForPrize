@@ -1,7 +1,7 @@
 import os, sys, tempfile, time
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox
 from tkinterdnd2 import TkinterDnD, DND_FILES
 
 from src.config_manager  import ConfigManager
@@ -37,12 +37,11 @@ class MainWindow:
         self._history  = HistoryManager(os.path.join(base_dir, "history.json"))
         self._reader           = None
         self._selected_product = None
-        self._selected_row     = None   # highlighted row frame
         self._selected_hist_row = None  # highlighted history row frame
-        self._table_rows       = []     # list of (frame, product, orig_bg)
-        self._check_vars       = []     # list of (BooleanVar, key) for visible rows
-        self._selected_keys    = set()  # persistent selection across searches
-        self._key_to_product   = {}     # key → product dict
+        self._tree_data        = {}     # iid → product dict
+        self._iid_to_key       = {}     # iid → stable key
+        self._key_to_iid       = {}     # stable key → iid (current view)
+        self._checked_keys     = set()  # persistent checked state (stable keys)
         self._suggestion_btns  = []
         self._search_after_id  = None
 
@@ -192,56 +191,61 @@ class MainWindow:
             highlightthickness=1, highlightbackground=BORDER)
         self._suggest_frame.pack(fill="x", padx=12)
 
-        # Column headers
+        # ── Treeview product table ────────────────────────────────────
         tk.Frame(parent, bg=BORDER, height=1).pack(fill="x", pady=(8, 0))
-        hdr = tk.Frame(parent, bg="#F2F3F5")
-        hdr.pack(fill="x")
-        self._select_all_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(hdr, variable=self._select_all_var,
-                       command=self._toggle_select_all,
-                       bg="#F2F3F5", activebackground="#F2F3F5",
-                       relief="flat", bd=0,
-                       ).pack(side="left", padx=(4, 0))
-        for text, width, anchor in [
-            ("Article",  17, "w"),
-            ("P/L",       5, "w"),
-            ("Pvente",    8, "e"),
-            ("PPHT",      7, "e"),
-            ("PPTTC",     7, "e"),
-        ]:
-            tk.Label(hdr, text=text, width=width,
-                     font=("Helvetica", 10, "bold"),
-                     bg="#F2F3F5", fg=MUTED,
-                     anchor=anchor, pady=5,
-                     padx=6 if anchor == "w" else 2,
-                     ).pack(side="left")
-        tk.Frame(parent, bg=BORDER, height=1).pack(fill="x")
 
-        # Scrollable product table
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Product.Treeview",
+                        background=SURFACE, foreground=TEXT,
+                        fieldbackground=SURFACE,
+                        font=("Helvetica", 11), rowheight=30)
+        style.configure("Product.Treeview.Heading",
+                        font=("Helvetica", 10, "bold"),
+                        background="#F2F3F5", foreground=MUTED, padding=5)
+        style.map("Product.Treeview",
+                  background=[("selected", ROW_SEL)],
+                  foreground=[("selected", TEXT)])
+
         tbl_wrap = tk.Frame(parent, bg=SURFACE)
         tbl_wrap.pack(fill="both", expand=True)
 
-        self._table_canvas = tk.Canvas(
-            tbl_wrap, bg=SURFACE, highlightthickness=0, bd=0)
-        tbl_sb = tk.Scrollbar(
-            tbl_wrap, orient="vertical",
-            command=self._table_canvas.yview)
-        self._table_frame = tk.Frame(self._table_canvas, bg=SURFACE)
-        self._table_frame.bind(
-            "<Configure>",
-            lambda e: self._table_canvas.configure(
-                scrollregion=self._table_canvas.bbox("all")))
-        self._tbl_win = self._table_canvas.create_window(
-            (0, 0), window=self._table_frame, anchor="nw")
-        self._table_canvas.configure(yscrollcommand=tbl_sb.set)
-        self._table_canvas.bind(
-            "<Configure>",
-            lambda e: self._table_canvas.itemconfigure(
-                self._tbl_win, width=e.width))
-        self._table_canvas.bind("<MouseWheel>", self._on_mousewheel)
-        self._table_frame.bind("<MouseWheel>", self._on_mousewheel)
-        self._table_canvas.pack(side="left", fill="both", expand=True)
+        cols = ("check", "article", "p_l", "pvente", "ppro_htva", "ppro")
+        self._tree = ttk.Treeview(tbl_wrap, columns=cols, show="headings",
+                                  style="Product.Treeview", selectmode="browse")
+        self._tree.heading("check",     text="☐")
+        self._tree.heading("article",   text="Article")
+        self._tree.heading("p_l",       text="€/L")
+        self._tree.heading("pvente",    text="Pvente")
+        self._tree.heading("ppro_htva", text="PPHT")
+        self._tree.heading("ppro",      text="PPTTC")
+
+        self._tree.column("check",     width=30,  minwidth=30,  anchor="center", stretch=False)
+        self._tree.column("article",   width=180, minwidth=100, anchor="w")
+        self._tree.column("p_l",       width=70,  minwidth=50,  anchor="w")
+        self._tree.column("pvente",    width=70,  minwidth=50,  anchor="e")
+        self._tree.column("ppro_htva", width=60,  minwidth=40,  anchor="e")
+        self._tree.column("ppro",      width=60,  minwidth=40,  anchor="e")
+
+        self._tree.tag_configure("even", background=SURFACE)
+        self._tree.tag_configure("odd",  background=ROW_ALT)
+
+        tbl_sb = ttk.Scrollbar(tbl_wrap, orient="vertical", command=self._tree.yview)
+        self._tree.configure(yscrollcommand=tbl_sb.set)
+        self._tree.pack(side="left", fill="both", expand=True)
         tbl_sb.pack(side="right", fill="y")
+
+        # Click on row → preview; click on check column → toggle checkbox
+        # Click on ☐ heading → toggle select all
+        self._tree.bind("<<TreeviewSelect>>", self._on_tree_select)
+        self._tree.bind("<Button-1>", self._on_tree_click)
+        self._tree.heading("check", command=self._toggle_select_all)
+
+        # Selection counter
+        self._sel_counter = tk.Label(parent, text="",
+                                     font=("Helvetica", 10), bg=SURFACE,
+                                     fg=MUTED, anchor="w")
+        self._sel_counter.pack(fill="x", padx=12, pady=(2, 0))
 
         # Separator + History
         tk.Frame(parent, bg=BORDER, height=1).pack(fill="x")
@@ -266,10 +270,6 @@ class MainWindow:
                 scrollregion=self._hist_canvas.bbox("all")))
 
         self._refresh_history()
-
-    def _on_mousewheel(self, event):
-        self._table_canvas.yview_scroll(
-            int(-1 * (event.delta / 120)), "units")
 
     def _build_right(self, parent):
         # Format label
@@ -373,6 +373,14 @@ class MainWindow:
             font=ctk.CTkFont("Helvetica", 12),
             fg_color="#888", hover_color="#666",
             corner_radius=8,
+        ).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(
+            batch_bar, text="⇄  Inverser",
+            command=self._invert_selection,
+            width=120, height=36,
+            font=ctk.CTkFont("Helvetica", 12),
+            fg_color="#888", hover_color="#666",
+            corner_radius=8,
         ).pack(side="left")
 
     def _set_format(self, fmt: str):
@@ -420,9 +428,13 @@ class MainWindow:
                 bg="#F0F4E8", fg="#5A7A30")
             self._populate_table(self._reader.all_rows())
             # Auto-select first row so preview is visible immediately
-            if self._table_rows:
-                fr, first_row, _ = self._table_rows[0]
-                self._select_product(first_row, fr)
+            children = self._tree.get_children()
+            if children:
+                self._tree.selection_set(children[0])
+                self._tree.focus(children[0])
+                product = self._tree_data.get(children[0])
+                if product:
+                    self._select_product(product)
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible de charger :\n{e}")
 
@@ -474,88 +486,77 @@ class MainWindow:
 
     # ── Table ─────────────────────────────────────────────────────────
 
-    _MAX_ROWS = 5000
+    @staticmethod
+    def _stable_key(row, idx):
+        return (row.get("article", ""), str(row.get("pvente", 0)), idx)
 
     def _populate_table(self, rows: list):
-        for w in self._table_frame.winfo_children():
-            w.destroy()
-        self._table_rows.clear()
-        self._check_vars.clear()
-        self._selected_row = None
-        if not rows:
-            tk.Label(self._table_frame, text="Aucun résultat.",
-                     font=("Helvetica", 12), bg=SURFACE,
-                     fg=MUTED, pady=20).pack()
+        tree = self._tree
+        tree.delete(*tree.get_children())
+        self._tree_data.clear()
+        self._iid_to_key.clear()
+        self._key_to_iid.clear()
+        fp = ExcelReader.format_price
+
+        for i, row in enumerate(rows):
+            iid = str(i)
+            key = self._stable_key(row, i)
+            tag = "even" if i % 2 == 0 else "odd"
+            check = "☑" if key in self._checked_keys else "☐"
+            tree.insert("", "end", iid=iid, values=(
+                check,
+                row.get("article", ""),
+                ExcelReader.format_price_per_litre(row.get("p_l", "") or ""),
+                fp(row.get("pvente", 0)) + "€",
+                fp(row.get("ppro_htva", 0)),
+                fp(row.get("ppro", 0)),
+            ), tags=(tag,))
+            self._tree_data[iid] = row
+            self._iid_to_key[iid] = key
+            self._key_to_iid[key] = iid
+
+        self._update_sel_counter()
+
+    def _on_tree_select(self, event):
+        """Row selected → update preview."""
+        sel = self._tree.selection()
+        if sel:
+            iid = sel[0]
+            product = self._tree_data.get(iid)
+            if product:
+                self._select_product(product)
+
+    def _on_tree_click(self, event):
+        """Click on check column → toggle checkbox."""
+        region = self._tree.identify_region(event.x, event.y)
+        if region != "cell":
             return
-        total = len(rows)
-        for i, row in enumerate(rows[:self._MAX_ROWS]):
-            self._add_table_row(row, i)
-        if total > self._MAX_ROWS:
-            tk.Label(self._table_frame,
-                     text=f"… {total - self._MAX_ROWS} autres (affinez la recherche)",
-                     font=("Helvetica", 9), bg=SURFACE,
-                     fg=MUTED, pady=4).pack()
-
-    def _add_table_row(self, row: dict, idx: int = 0):
-        fp  = ExcelReader.format_price
-        bg  = SURFACE if idx % 2 == 0 else ROW_ALT
-        fr  = tk.Frame(self._table_frame, bg=bg, cursor="hand2")
-        fr.pack(fill="x")
-
-        key = (row.get("article", ""), str(row.get("pvente", 0)), idx)
-        self._key_to_product[key] = row
-        var = tk.BooleanVar(value=(key in self._selected_keys))
-        self._check_vars.append((var, key))
-        cb = tk.Checkbutton(fr, variable=var, bg=bg, activebackground=bg,
-                            relief="flat", bd=0,
-                            command=self._make_check_cmd(var, key))
-        cb.pack(side="left", padx=(4, 0))
-
-        tk.Label(fr, text=row.get("article", ""),
-                 width=17, anchor="w",
-                 font=("Helvetica", 11), bg=bg, fg=TEXT,
-                 padx=8, pady=5).pack(side="left")
-        tk.Label(fr, text=ExcelReader.format_price_per_litre(row.get("p_l", "") or ""),
-                 width=8, anchor="w",
-                 font=("Helvetica", 10), bg=bg, fg=MUTED,
-                 pady=5).pack(side="left")
-        tk.Label(fr, text=fp(row.get("pvente", 0)) + "€",
-                 width=8, anchor="e",
-                 font=("Helvetica", 11, "bold"),
-                 bg=bg, fg=P, pady=5).pack(side="left")
-        tk.Label(fr, text=fp(row.get("ppro_htva", 0)),
-                 width=7, anchor="e",
-                 font=("Helvetica", 11), bg=bg, fg=MUTED,
-                 pady=5).pack(side="left")
-        tk.Label(fr, text=fp(row.get("ppro", 0)),
-                 width=7, anchor="e",
-                 font=("Helvetica", 11), bg=bg, fg=MUTED,
-                 pady=5).pack(side="left")
-
-        fr._orig_bg = bg   # stored for O(1) deselect
-        self._table_rows.append((fr, row, bg))
-
-        for w in [fr] + [c for c in fr.winfo_children()
-                         if not isinstance(c, tk.Checkbutton)]:
-            w.bind("<Button-1>",
-                   lambda e, r=row, f=fr: self._select_product(r, f))
-
-    def _set_row_bg(self, frame, bg):
-        # Skip no-op: avoid configure calls when colour hasn't changed
-        if getattr(frame, '_current_bg', None) == bg:
+        col = self._tree.identify_column(event.x)
+        if col != "#1":  # first column = check
             return
-        frame._current_bg = bg
-        try:
-            frame.configure(bg=bg)
-        except Exception:
-            pass
-        for child in frame.winfo_children():
-            try:
-                child.configure(bg=bg)
-            except Exception:
-                pass
+        iid = self._tree.identify_row(event.y)
+        if not iid:
+            return
+        key = self._iid_to_key.get(iid)
+        if not key:
+            return
+        if key in self._checked_keys:
+            self._checked_keys.discard(key)
+            self._tree.set(iid, "check", "☐")
+        else:
+            self._checked_keys.add(key)
+            self._tree.set(iid, "check", "☑")
+        self._update_sel_counter()
 
-    def _select_product(self, product: dict, row_frame=None):
+    def _update_sel_counter(self):
+        n = len(self._checked_keys)
+        if n == 0:
+            self._sel_counter.configure(text="")
+        else:
+            self._sel_counter.configure(
+                text=f"{n} produit{'s' if n > 1 else ''} sélectionné{'s' if n > 1 else ''}")
+
+    def _select_product(self, product: dict):
         # Deselect previous history row
         if self._selected_hist_row:
             prev = self._selected_hist_row
@@ -569,15 +570,7 @@ class MainWindow:
             except Exception:
                 pass
             self._selected_hist_row = None
-        # Deselect previous table row — O(1) via stored attribute
-        if self._selected_row:
-            self._set_row_bg(self._selected_row,
-                             getattr(self._selected_row, "_orig_bg", SURFACE))
         self._selected_product = product
-        self._selected_row = row_frame
-        # Highlight selected row
-        if row_frame:
-            self._set_row_bg(row_frame, ROW_SEL)
         # Show preview
         self._placeholder.place_forget()
         self._refresh_preview()
@@ -791,10 +784,7 @@ class MainWindow:
 
     def _select_from_history(self, entry: dict, row_frame=None):
         # Deselect active table row
-        if self._selected_row:
-            self._set_row_bg(self._selected_row,
-                             getattr(self._selected_row, "_orig_bg", SURFACE))
-            self._selected_row = None
+        self._tree.selection_remove(self._tree.selection())
         # Deselect previous history row
         if self._selected_hist_row:
             prev = self._selected_hist_row
@@ -898,37 +888,46 @@ class MainWindow:
 
     # ── Batch selection helpers ────────────────────────────────────────
 
-    @staticmethod
-    def _row_key(row):
-        return (row.get("article", ""), str(row.get("pvente", 0)))
-
-    def _make_check_cmd(self, var, key):
-        def _cmd():
-            if var.get():
-                self._selected_keys.add(key)
-            else:
-                self._selected_keys.discard(key)
-        return _cmd
-
     def _toggle_select_all(self):
-        val = self._select_all_var.get()
-        for var, key in self._check_vars:
-            var.set(val)
-            if val:
-                self._selected_keys.add(key)
-            else:
-                self._selected_keys.discard(key)
+        """Toggle all visible rows. Operates only on current view."""
+        all_visible_keys = set(self._iid_to_key.values())
+        if all_visible_keys <= self._checked_keys:
+            # All visible checked → uncheck visible
+            self._checked_keys -= all_visible_keys
+            for iid in self._tree.get_children():
+                self._tree.set(iid, "check", "☐")
+        else:
+            # Check all visible
+            self._checked_keys |= all_visible_keys
+            for iid in self._tree.get_children():
+                self._tree.set(iid, "check", "☑")
+        self._update_sel_counter()
 
     def _unselect_all(self):
-        self._selected_keys.clear()
-        self._select_all_var.set(False)
-        for var, _ in self._check_vars:
-            var.set(False)
+        self._checked_keys.clear()
+        for iid in self._tree.get_children():
+            self._tree.set(iid, "check", "☐")
+        self._update_sel_counter()
+
+    def _invert_selection(self):
+        """Invert checked state of all visible rows."""
+        for iid in self._tree.get_children():
+            key = self._iid_to_key.get(iid)
+            if not key:
+                continue
+            if key in self._checked_keys:
+                self._checked_keys.discard(key)
+                self._tree.set(iid, "check", "☐")
+            else:
+                self._checked_keys.add(key)
+                self._tree.set(iid, "check", "☑")
+        self._update_sel_counter()
 
     def _get_checked_products(self):
-        return [self._key_to_product[k]
-                for k in self._selected_keys
-                if k in self._key_to_product]
+        """Return checked products in display order."""
+        return [self._tree_data[iid]
+                for iid in self._tree.get_children()
+                if self._iid_to_key.get(iid) in self._checked_keys]
 
     def _batch_print_labels(self):
         products = self._get_checked_products()
@@ -979,9 +978,9 @@ class MainWindow:
         try:
             import fitz
             merger = fitz.open()
-            for product in products:
+            for i, product in enumerate(products):
                 tmp = os.path.join(tempfile.gettempdir(),
-                                   f"gofp_a4_{abs(hash(product.get('article','')))}.pdf")
+                                   f"gofp_a4_batch_{i}.pdf")
                 PdfGenerator.generate_a4(product, tmp, logo)
                 src = fitz.open(tmp)
                 merger.insert_pdf(src)
