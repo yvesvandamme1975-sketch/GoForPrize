@@ -49,7 +49,7 @@ class MainWindow:
 
         self._root = TkinterDnD.Tk()
         ctk.set_appearance_mode("light")
-        self._root.title("GoForPrice — Impression étiquettes")
+        self._root.title("GoForPrice — Impression étiquettes  (v3.1)")
         self._root.geometry("1200x720")
         self._root.configure(bg=BG)
 
