@@ -103,7 +103,7 @@ class DymoPrinter:
             subprocess.run(["xdg-open", pdf_path], check=True)
 
 
-def _find_sumatra() -> str | None:
+def _find_sumatra():
     """Return the path to SumatraPDF.exe: bundled first, then system install."""
     # 1. Bundled inside PyInstaller _MEIPASS temp dir
     meipass = getattr(sys, '_MEIPASS', None)
