@@ -227,12 +227,12 @@ class MainWindow:
         self._tree.heading("ppro_htva", text="PPHT")
         self._tree.heading("ppro",      text="PPTTC")
 
-        self._tree.column("check",     width=30,  minwidth=30,  anchor="center", stretch=False)
-        self._tree.column("article",   width=180, minwidth=100, anchor="w")
-        self._tree.column("p_l",       width=70,  minwidth=50,  anchor="w")
-        self._tree.column("pvente",    width=70,  minwidth=50,  anchor="e")
-        self._tree.column("ppro_htva", width=60,  minwidth=40,  anchor="e")
-        self._tree.column("ppro",      width=60,  minwidth=40,  anchor="e")
+        self._tree.column("check",     width=28,  minwidth=28,  anchor="center", stretch=False)
+        self._tree.column("article",   width=150, minwidth=80,  anchor="w")
+        self._tree.column("p_l",       width=55,  minwidth=40,  anchor="w")
+        self._tree.column("pvente",    width=60,  minwidth=40,  anchor="e")
+        self._tree.column("ppro_htva", width=50,  minwidth=35,  anchor="e")
+        self._tree.column("ppro",      width=50,  minwidth=35,  anchor="e")
 
         self._tree.tag_configure("even", background=SURFACE)
         self._tree.tag_configure("odd",  background=ROW_ALT)
@@ -242,8 +242,8 @@ class MainWindow:
                               width=16, bg="#CCCCCC", troughcolor="#F0F0F0",
                               activebackground="#999999")
         self._tree.configure(yscrollcommand=tbl_sb.set)
-        self._tree.pack(side="left", fill="both", expand=True)
-        tbl_sb.pack(side="right", fill="y")
+        tbl_sb.pack(side="right", fill="y")    # scrollbar FIRST — claims 16px
+        self._tree.pack(side="left", fill="both", expand=True)  # tree fills rest
 
         # Mouse wheel scrolling — bind to root so it works everywhere
         def _on_mousewheel(event):
