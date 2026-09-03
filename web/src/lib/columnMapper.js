@@ -3,12 +3,12 @@ import Fuse from 'fuse.js';
 export const SYNONYMS = {
   article:   ['article', 'nom', 'libellé', 'libelle', 'désignation', 'designation', 'description', 'produit'],
   pvente:    ['pvente', 'pv ', 'prix vente', 'prix de vente', 'selling price', 'vente'],
-  ppro:      ['ppro', 'pprottc', 'ppro ttc', 'prix pro ttc', 'pro ttc'],
+  ppro:      ['ppro', 'pprottc', 'ppro ttc', 'prix pro ttc', 'pro ttc', 'pprotvac', 'ppro tvac', 'prix pro tvac', 'pro tvac'],
   ppro_htva: ['ppro htva', 'pprohtva', 'ppro_htva', 'prix pro htva', 'pro htva', 'ppht'],
   origine:   ['origine', 'origin', 'pays', 'country'],
-  p_l:       ['p/l', 'p_l', 'prix/litre', 'prix litre', 'prix/l', 'pl'],
+  p_l:       ['p/l', 'p_l', 'prix/litre', 'prix litre', 'prix au litre', 'prix/l', 'pl'],
   pa_htva:   ['pa htva', 'pa_htva', 'prix achat', 'pa 2026', 'pa htva 2026'],
-  taux_tva:  ['taux tva', 'taux_tva', 'tva', 'vat'],
+  taux_tva:  ['taux tva', 'taux_tva', 'taux de tva', 'tva %', 'vat'],
   ean:       ['ean', 'barcode', 'code barre', 'code-barre'],
 };
 

@@ -38,3 +38,17 @@ def test_missing_required_detected():
     missing = ColumnMapper.missing_required(ColumnMapper.auto_map(["foo"]))
     assert "article" in missing
     assert "pvente"  in missing
+
+ODOO_HEADERS = ["Nom", "Prix vente", "PRIX PRO TVAC", "Prix pro HTVA",
+                "Origine", "Prix au litre"]
+
+def test_odoo_export_headers_fully_mapped():
+    m = ColumnMapper.auto_map(ODOO_HEADERS)
+    assert m["article"]   == "Nom"
+    assert m["pvente"]    == "Prix vente"
+    assert m["ppro"]      == "PRIX PRO TVAC"
+    assert m["ppro_htva"] == "Prix pro HTVA"
+    assert m["origine"]   == "Origine"
+    assert m["p_l"]       == "Prix au litre"
+    assert m["taux_tva"]  is None
+    assert ColumnMapper.missing_required(m) == []

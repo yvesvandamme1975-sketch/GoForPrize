@@ -88,3 +88,19 @@ describe('columnMapper', () => {
     });
   });
 });
+
+describe('Odoo export (Go For Price)', () => {
+  const ODOO_HEADERS = ['Nom', 'Prix vente', 'PRIX PRO TVAC', 'Prix pro HTVA', 'Origine', 'Prix au litre'];
+
+  it('maps every Odoo column without needing the dialog', () => {
+    const m = autoMap(ODOO_HEADERS);
+    expect(m.article).toBe('Nom');
+    expect(m.pvente).toBe('Prix vente');
+    expect(m.ppro).toBe('PRIX PRO TVAC');
+    expect(m.ppro_htva).toBe('Prix pro HTVA');
+    expect(m.origine).toBe('Origine');
+    expect(m.p_l).toBe('Prix au litre');
+    expect(m.taux_tva).toBeNull();
+    expect(missingRequired(m)).toEqual([]);
+  });
+});
