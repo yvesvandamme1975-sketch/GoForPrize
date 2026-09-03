@@ -42,6 +42,7 @@
 - Dockerfile in `web/Dockerfile` — Node 22 Alpine, two-stage build
 - URL: https://goforprize-production.up.railway.app
 - Domain: goforprize-production.up.railway.app
+- If a push to `main` creates no deployment (`railway deployment list`), check GitHub → Settings → Applications → Railway App → Repository access includes GoForPrize (it was silently dropped once, 2026-04). Workaround: `cd web && railway up --detach`
 
 ## Desktop App (root)
 - Python 3.x + CustomTkinter
