@@ -9,6 +9,7 @@ from src.excel_reader    import ExcelReader
 from src.pdf_generator   import PdfGenerator
 from src.printer         import DymoPrinter
 from src.history_manager import HistoryManager
+from src.pagination      import page_bounds
 from src.text_cleaner    import clean_article
 from ui.settings_dialog  import SettingsDialog
 from ui.mapping_dialog   import MappingDialog
@@ -42,6 +43,8 @@ class MainWindow:
         self._iid_to_key       = {}     # iid → stable key
         self._key_to_iid       = {}     # stable key → iid (current view)
         self._checked_keys     = set()  # persistent checked state (stable keys)
+        self._current_rows     = []     # full result list (all pages)
+        self._page             = 0
         self._suggestion_btns  = []
         self._search_after_id  = None
 
@@ -263,11 +266,21 @@ class MainWindow:
         self._tree.bind("<Button-1>", self._on_tree_click)
         self._tree.heading("check", command=self._toggle_select_all)
 
-        # Selection counter
-        self._sel_counter = tk.Label(parent, text="",
+        # Pager + selection counter
+        pager = tk.Frame(parent, bg=SURFACE)
+        pager.pack(fill="x", padx=12, pady=(2, 0))
+        self._sel_counter = tk.Label(pager, text="",
                                      font=("Helvetica", 10), bg=SURFACE,
                                      fg=MUTED, anchor="w")
-        self._sel_counter.pack(fill="x", padx=12, pady=(2, 0))
+        self._sel_counter.pack(side="left", fill="x", expand=True)
+        self._next_btn = tk.Button(pager, text="▶", width=3, relief="flat",
+                                   cursor="hand2",
+                                   command=lambda: self._render_page(self._page + 1))
+        self._page_label = tk.Label(pager, text="", font=("Helvetica", 10),
+                                    bg=SURFACE, fg=TEXT)
+        self._prev_btn = tk.Button(pager, text="◀", width=3, relief="flat",
+                                   cursor="hand2",
+                                   command=lambda: self._render_page(self._page - 1))
 
         # Separator + History
         tk.Frame(parent, bg=BORDER, height=1).pack(fill="x")
@@ -515,9 +528,14 @@ class MainWindow:
     def _stable_key(row, idx):
         return (row.get("article", ""), str(row.get("pvente", 0)), idx)
 
-    _MAX_DISPLAY = 500  # cap rows to prevent UI freeze on Windows
+    _PAGE_SIZE = 500  # rows per page — more at once freezes the UI on Windows
 
     def _populate_table(self, rows: list):
+        self._current_rows = rows
+        self._render_page(0)
+
+    def _render_page(self, page: int):
+        rows = self._current_rows
         tree = self._tree
         tree.delete(*tree.get_children())
         self._tree_data.clear()
@@ -526,9 +544,10 @@ class MainWindow:
         fp = ExcelReader.format_price
 
         total = len(rows)
-        display = rows[:self._MAX_DISPLAY]
+        start, end, self._page, pages = page_bounds(total, page, self._PAGE_SIZE)
 
-        for i, row in enumerate(display):
+        for i in range(start, end):
+            row = rows[i]
             iid = str(i)
             key = self._stable_key(row, i)
             tag = "even" if i % 2 == 0 else "odd"
@@ -546,7 +565,23 @@ class MainWindow:
             self._key_to_iid[key] = iid
 
         self._total_rows = total
+        tree.yview_moveto(0)
+        self._update_pager(start, end, pages)
         self._update_sel_counter()
+
+    def _update_pager(self, start, end, pages):
+        for w in (self._prev_btn, self._page_label, self._next_btn):
+            w.pack_forget()
+        if pages <= 1:
+            return
+        self._next_btn.pack(side="right")
+        self._page_label.configure(
+            text=f"{start + 1}–{end} / {self._total_rows}")
+        self._page_label.pack(side="right", padx=4)
+        self._prev_btn.pack(side="right")
+        self._prev_btn.configure(state="normal" if self._page > 0 else "disabled")
+        self._next_btn.configure(
+            state="normal" if self._page < pages - 1 else "disabled")
 
     def _on_tree_select(self, event):
         """Row selected → update preview."""
@@ -581,11 +616,7 @@ class MainWindow:
 
     def _update_sel_counter(self):
         n = len(self._checked_keys)
-        total = getattr(self, '_total_rows', 0)
-        displayed = len(self._tree_data)
         parts = []
-        if total > displayed:
-            parts.append(f"{displayed}/{total} affichés")
         if n > 0:
             parts.append(f"{n} sélectionné{'s' if n > 1 else ''}")
         self._sel_counter.configure(text=" — ".join(parts) if parts else "")
@@ -958,10 +989,9 @@ class MainWindow:
         self._update_sel_counter()
 
     def _get_checked_products(self):
-        """Return checked products in display order."""
-        return [self._tree_data[iid]
-                for iid in self._tree.get_children()
-                if self._iid_to_key.get(iid) in self._checked_keys]
+        """Return checked products across all pages, in display order."""
+        return [row for i, row in enumerate(self._current_rows)
+                if self._stable_key(row, i) in self._checked_keys]
 
     def _batch_print_labels(self):
         products = self._get_checked_products()
